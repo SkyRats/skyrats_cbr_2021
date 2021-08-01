@@ -250,9 +250,11 @@ Mat HDetector::detect(Mat frame)
         {
 
           if (!TESTE_VEL)
+          {
             cout << "Cruz detectado" << endl;
-          rectangle(frame2, bounds, (0, 255, 0));
-          imshow("Lines", frame2);
+            rectangle(frame2, bounds, (0, 255, 0));
+            imshow("Lines", frame2);
+          }
           auto stop = high_resolution_clock::now();
           auto duration = duration_cast<microseconds>(stop - start);
           if (!TESTE_VEL)
