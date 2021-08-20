@@ -7,10 +7,14 @@ using namespace std::chrono;
 
 #define ANGLE_THRESH 0.01
 #define TESTE_VEL 0
-#define TEST_VID false
 #define PI 3.14159
 #define KERNEL_THRESH_MAX 1.2
 #define KERNEL_THRESH_MIN 0.9
+
+const int max_value_H = 360 / 2;
+const int max_value = 255;
+int low_H = 0, low_S = 0, low_V = 0;
+int high_H = max_value_H, high_S = max_value, high_V = max_value;
 
 #define vp vector<Point>
 #define vpf vector<Point2f>
@@ -26,7 +30,7 @@ struct comparison
   bool operator()(Point2f pt1, Point2f pt2) { return (pt1.y > pt2.y); }
 } comparing;
 
-class HDetector
+class CrossDetector
 {
 private:
   vpf edge_pts = {Point2f(0, 0), Point2f(0, 0), Point2f(0, 0), Point2f(0, 0)};
@@ -37,15 +41,15 @@ private:
 
 public:
   Mat warped;
-  HDetector();
+  CrossDetector();
   Mat detect(Mat frame);
 };
 
-HDetector::HDetector() {}
+CrossDetector::CrossDetector() {}
 
 /* Order points in edge_pts so that the first exit is the top-left, the second 
 top-right, the third bottom-right, and the fourth bottom-left */
-void HDetector::order_points()
+void CrossDetector::order_points()
 {
 
   sort(this->edge_pts.begin(), this->edge_pts.end(), comparing);
@@ -71,7 +75,7 @@ void HDetector::order_points()
 
 /* Takes an image as argument and returns warped perspective, moving edge_pts to
 the edge of the frame */
-Mat HDetector::four_points_transform(Mat image)
+Mat CrossDetector::four_points_transform(Mat image)
 {
 
   order_points();
@@ -105,7 +109,7 @@ Mat HDetector::four_points_transform(Mat image)
 }
 
 // Determines angle between vectors 'v1' and 'v2' using 'relative' as origin
-float HDetector::angle(Point2f v1, Point2f v2, Point2f relative)
+float CrossDetector::angle(Point2f v1, Point2f v2, Point2f relative)
 {
 
   float Vlenght1, Vlenght2; // Length of v1 and v2
@@ -119,7 +123,7 @@ float HDetector::angle(Point2f v1, Point2f v2, Point2f relative)
 }
 /* Checks if all sides of a 12 sided shape 'pts' are perpendicular and have the right orientation, 
     using ANGLE_THRESH */
-bool HDetector::angle_check(vpf pts)
+bool CrossDetector::angle_check(vpf pts)
 {
 
   int bitmasks[8] = {3510, 2925, 1755, 585, 1170, 2340};
@@ -149,30 +153,22 @@ bool HDetector::angle_check(vpf pts)
   return false;
 }
 
-// Takes an image 'frame' and detects whether it contains the letter H
-Mat HDetector::detect(Mat frame)
+// Takes an image 'frame' and detects whether it contains the Cross
+Mat CrossDetector::detect(Mat frame)
 {
   auto start = high_resolution_clock::now();
   Mat frame2 = frame;
-  cvtColor(frame, frame, CV_RGB2GRAY);
+  cvtColor(frame, frame, COLOR_BGR2HSV);
   // Blur and threshold remove noise from image
 
   for (int test = 0; test < NUM_GAUSS_BLUR; test++)
   {
     GaussianBlur(frame, frame, Size(5, 5), 0);
   }
-  threshold(frame, frame, 200, 255, 1);
+  inRange(frame, Scalar(low_H, low_S, low_V), Scalar(high_H, high_S, high_V), frame);
   cv::adaptiveThreshold(frame, frame, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 9, 20.0);
   cv::adaptiveThreshold(frame, frame, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 3, 0.0);
 
-  //Erode
-  /*int erosion_size = 1;
-    Mat element = getStructuringElement( MORPH_RECT,
-                                       Size( 2*erosion_size + 1, 2*erosion_size+1 ),
-                                       Point( erosion_size, erosion_size ) );
-    erode(frame, frame, element);*/
-
-  //threshold(frame, frame, 150, 255, 1);
   vector<vp> contour;
   findContours(frame, contour, RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
@@ -236,14 +232,6 @@ Mat HDetector::detect(Mat frame)
         if (DEBUG)
         {
           imshow("warped", frame);
-
-          // // Shows captures edge of H in black
-          // circle(frame2, this->edge_pts[0], 3, (255, 0, 0), 3);
-          // circle(frame2, this->edge_pts[1], 3, (255, 0, 0), 3);
-          // circle(frame2, this->edge_pts[2], 3, (255, 0, 0), 3);
-          // circle(frame2, this->edge_pts[3], 3, (255, 0, 0), 3);
-
-          // Draws bound
         }
 
         if (angle_check(approx))
@@ -258,7 +246,7 @@ Mat HDetector::detect(Mat frame)
           auto stop = high_resolution_clock::now();
           auto duration = duration_cast<microseconds>(stop - start);
           if (!TESTE_VEL)
-            cout << "Time from getting frame to detecting H: ";
+            cout << "Time from getting frame to detecting Cross: ";
 
           cout << duration.count() << endl;
         }
@@ -270,6 +258,37 @@ Mat HDetector::detect(Mat frame)
   return frame2;
 }
 
+static void on_low_H_thresh_trackbar(int, void *)
+{
+  low_H = min(high_H - 1, low_H);
+  setTrackbarPos("Low H", "display", low_H);
+}
+static void on_high_H_thresh_trackbar(int, void *)
+{
+  high_H = max(high_H, low_H + 1);
+  setTrackbarPos("High H", "display", high_H);
+}
+static void on_low_S_thresh_trackbar(int, void *)
+{
+  low_S = min(high_S - 1, low_S);
+  setTrackbarPos("Low S", "display", low_S);
+}
+static void on_high_S_thresh_trackbar(int, void *)
+{
+  high_S = max(high_S, low_S + 1);
+  setTrackbarPos("High S", "display", high_S);
+}
+static void on_low_V_thresh_trackbar(int, void *)
+{
+  low_V = min(high_V - 1, low_V);
+  setTrackbarPos("Low V", "display", low_V);
+}
+static void on_high_V_thresh_trackbar(int, void *)
+{
+  high_V = max(high_V, low_V + 1);
+  setTrackbarPos("High V", "display", high_V);
+}
+
 // For testing
 int main()
 {
@@ -277,31 +296,24 @@ int main()
   if (TESTE_VEL + 1)
     cin >> NUM_GAUSS_BLUR;
   Mat frame;
-  if (TEST_VID)
+
+  namedWindow("display");
+  // Trackbars to set thresholds for HSV values
+  createTrackbar("Low H", "display", &low_H, max_value_H, on_low_H_thresh_trackbar);
+  createTrackbar("High H", "display", &high_H, max_value_H, on_high_H_thresh_trackbar);
+  createTrackbar("Low S", "display", &low_S, max_value, on_low_S_thresh_trackbar);
+  createTrackbar("High S", "display", &high_S, max_value, on_high_S_thresh_trackbar);
+  createTrackbar("Low V", "display", &low_V, max_value, on_low_V_thresh_trackbar);
+  createTrackbar("High V", "display", &high_V, max_value, on_high_V_thresh_trackbar);
+
+  VideoCapture video(0);
+  CrossDetector *detector = new CrossDetector();
+  video >> frame;
+  while (true)
   {
-    VideoCapture cap("VIDEO.mp4");
-    HDetector *detector = new HDetector();
-    for (int c = 30 * (60 * 1 + 53) /**0 + 1*/; c > 0; c--)
-      cap >> frame;
-    while (true)
-    {
-      imshow("display", detector->detect(frame));
-      if (waitKey(30) == 27)
-        break;
-      cap >> frame;
-    }
-  }
-  else
-  {
-    VideoCapture video(0);
-    HDetector *detector = new HDetector();
+    imshow("display", detector->detect(frame));
+    if (waitKey(30) == 27)
+      break;
     video >> frame;
-    while (true)
-    {
-      imshow("display", detector->detect(frame));
-      if (waitKey(30) == 27)
-        break;
-      video >> frame;
-    }
   }
 }
