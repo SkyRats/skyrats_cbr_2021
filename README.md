@@ -52,6 +52,8 @@ Siga os seguintes passos pra fazer o tudo funcionar (deve ter outros jeitos de f
 * Por fim (ufaaa) é só buildar tudo com:
     * ```cd mavros_ws```
     * ``` catkin build ```
+* Ultima coisinha mas tbm muito importante pra fazer a garra funcionar:
+    * ```sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers```
 * Pronto!! Agora é só testar se está funcionando com:
     * ``` cd  mavros_ws/src/Drone_Trial_League/offshore_uav_pack/start ```
     * ``` source start.sh ```
