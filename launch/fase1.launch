@@ -1,0 +1,26 @@
+<launch>
+  <node
+    pkg="precision_landing"
+    type="cross_node"
+    name="cross_node" 
+    output="screen"
+  />
+  <node
+    pkg="precision_landing"
+    type="control.py"
+    name="control"
+    output="screen"
+  />
+  <node
+    pkg="precision_landing"
+    type="test.py"
+    name="test"
+    output="screen"
+  /> 
+  <node
+    pkg="mrs_mavbase"
+    type="MRS_MAV.py"
+    name="MRS_MAV"
+    output="screen"
+  />
+</launch> 

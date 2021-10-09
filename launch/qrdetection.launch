@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="qrdetection" name="qr_detection" type="detection_with_ros.py" output="screen"/>
+</launch>
