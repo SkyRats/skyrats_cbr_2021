@@ -21,3 +21,4 @@ altitude_estimators:
 heading_estimators:
   active: ["PIXHAWK"]
 
+use_garmin_inno_gate: False

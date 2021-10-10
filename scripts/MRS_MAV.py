@@ -23,7 +23,7 @@ import math
 import time
 import os
 GRIPPER = True
-TOL = 0.5
+TOL = 0.1
 
 class MRS_MAV:
     def __init__(self, mav_name):
@@ -56,6 +56,9 @@ class MRS_MAV:
         self.gripper_srv = rospy.ServiceProxy("/" + mav_name + "/control_manager/controller_gripper", GetStance)
         self.set_home_srv = rospy.ServiceProxy("/" + mav_name + "/mavros/cmd/set_home", CommandHome)
         self.change_alt_estimator = rospy.ServiceProxy("/" + mav_name + "/odometry/change_alt_estimator_type_string", String)
+        self.garmin_toggle = rospy.ServiceProxy("/" + mav_name + "/odometry/toggle_garmin", SetBool)
+        rospy.wait_for_service("/" + mav_name + "/odometry/toggle_garmin")
+        #self.garmin_toggle(False)
 
 
         ############# Subscribers #############
@@ -222,6 +225,13 @@ class MRS_MAV:
             print("Garra desligada")
     
     def altitude_estimator(self, value): #"BARO" or "HEIGHT"
+        #if value == "HEIGHT":
+        #    rospy.wait_for_service("/" + self.mav_name + "/odometry/toggle_garmin")
+        #    print(self.garmin_toggle(True))
+        #else:
+        #    rospy.wait_for_service("/" + self.mav_name + "/odometry/toggle_garmin")
+        #    print(self.garmin_toggle(False))
+        rospy.wait_for_service("/" + self.mav_name + "/odometry/change_alt_estimator_type_string")
         print(self.change_alt_estimator(value))
         
     
@@ -245,14 +255,14 @@ if __name__ == '__main__':
     #mav.takeoff()
     #mav.gripper("close")
     #mav.set_position(0,0,-1,hdg=0,relative_to_drone=True)
-    #mav.set_position(-50,-21,5)
-    #mav.set_position(-53.5,-36,5)
-    mav.altitude_estimator("HEIGHT")
+    #mav.set_position(0, 1)
+    #mav.set_position(0,0)
+    #mav.altitude_estimator("HEIGHT")
 
     #mav.set_position(-50,-40,1)
     #mav.set_home()
     #mav.run()
-    #mav.set_position(46,9,4.5)    
+    #mav.set_position(46,9,5)    
     #mav.set_position(46,9,-2)
     #mav.RTL()
     #mav.input_trajectory([[10,92,12], [12,92,12]],2, loop=True)

@@ -55,8 +55,8 @@ class pipeline_scanner:
 
     def run(self):
         rospy.loginfo("Indo para o tubo")
+        self.mav.altitude_estimator("BARO")
         self.mav.set_position(-49.5, -25, 3, relative_to_drone=False)
-        time.sleep(10)
         rospy.loginfo("Cheguei, descendo")
         self.mav.altitude_estimator("HEIGHT")
         self.mav.set_position(-49.5, -25, 1, relative_to_drone=False)
