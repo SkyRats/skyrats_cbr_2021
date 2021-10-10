@@ -18,7 +18,7 @@ class pipeline_scanner:
     def camera_callback(self, data):
         cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
         rows, cols, a = cv_image.shape
-        self.cv_image = cv_image[0: int(rows - (rows*0.2)) , int(cols*0.2) : cols]
+        self.cv_image = cv_image[int(rows*0.4) : int(rows - (rows*0.4)) , int(cols*0.4) : int(cols - (cols*0.4))]
         self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
     
     def lidar_callback(self,data):
@@ -28,8 +28,6 @@ class pipeline_scanner:
         lowerbvermelho = np.array([0, 230, 230])
         upperbvermelho = np.array([30, 255, 255])
         self.mask_vermelho = cv2.inRange(self.hsv, lowerbvermelho, upperbvermelho)    
-        cv2.imshow('mask_vermelho', self.mask_vermelho)
-        cv2.waitKey(3)
         if sum(sum(self.mask_vermelho)) > 0:
             return True
 
@@ -37,8 +35,6 @@ class pipeline_scanner:
         lowerbverde = np.array([55, 230, 230])
         upperbverde = np.array([65, 255, 255])
         self.mask_verde = cv2.inRange(self.hsv, lowerbverde, upperbverde)
-        cv2.imshow('mask_final_verde', self.mask_verde)
-        cv2.waitKey(3)
     
     def sensors_location(self):
         final_mask = self.mask_verde + self.mask_vermelho
@@ -52,51 +48,56 @@ class pipeline_scanner:
                 locations.append((cx,cy))
             except ZeroDivisionError:
                 pass
-        cv2.imshow('soma', final_mask)
-        cv2.waitKey(30)
         return locations
 
     def height_check(self):
-        print(self.lidar_range)
-        if self.lidar_range < 0.65:
-            print("SUBINDOOOOOOOOOOOOOOO")
-            self.mav.set_position( 0, 0, 0.4, relative_to_drone=True)
+        print("Altura atual do drone: " + str(self.lidar_range))
 
     def run(self):
         rospy.loginfo("Indo para o tubo")
-        self.mav.set_position(-49.5, -25, 1.425, relative_to_drone=False)
+        self.mav.set_position(-49.5, -25, 3, relative_to_drone=False)
         time.sleep(10)
         rospy.loginfo("Cheguei, descendo")
-        self.mav.set_position(-49.5, -25, -2.3, relative_to_drone=False)
+        self.mav.altitude_estimator("HEIGHT")
+        self.mav.set_position(-49.5, -25, 1, relative_to_drone=False)
         rospy.loginfo("Em posição, iniciando scan")
         old_locations = []
         locations = []
-        while self.mav.controller_data.position.y > -43:
+        while self.mav.controller_data.position.y > -44:
+            red = False
             self.height_check()
-            self.mav.set_position(-49.5, self.mav.controller_data.position.y - 0.1, -2.3, relative_to_drone=False)
-            if self.detect_red():
-                self.mav.set_position(-49.5, self.mav.controller_data.position.y - 0.1, -2.3, relative_to_drone=False)
-                t0 = time.time()
-                t1 = time.time()
-                while t0 - t1 < 3:
-                    print('\a')
-                    t1 = time.time()
+            self.mav.set_position(-49.5, self.mav.controller_data.position.y - 0.15, 1, relative_to_drone=False)
+            red = self.detect_red()
             self.detect_green()
             locations = self.sensors_location()
             aux = []
             for sensor in locations:
-                print(old_locations)
                 detectado = False
                 for old_sensor in old_locations:
                     if int(((sensor[0] - old_sensor[0])**2 + (sensor[1] - old_sensor[1])**2)**(1/2)) < 40:
-                        print("esse ja foi detectado!!!")
                         detectado = True
                         break
                 if not detectado:
-                    print("ESSE É NOVO UHUL")
+                    if red:
+                        for i in range(30):
+                            print('\a')
+                        rospy.logwarn("Sensor vermelho detectado!")
+                    else:
+                        rospy.loginfo("Sensor verde, continuando!")
                 aux.append(sensor)
             old_locations = aux
             self.mav.rate.sleep()
+        rospy.loginfo("Scan finalizado, subindo")
+        self.mav.set_position(-49.5, -44, 4, relative_to_drone=False)
+        rospy.loginfo("Voltando para a base costeira")
+        self.mav.altitude_estimator("BARO")
+        self.mav.set_position(-49.5, -25, 4, relative_to_drone=False)
+        self.mav.set_position(10, 90, 4, relative_to_drone=False)
+        self.mav.altitude_estimator("HEIGHT")
+        rospy.loginfo("Pousando")
+        self.mav.land()
+        if self.lidar_range < 0.25:
+            self.mav.disarm()
 
 if __name__ == '__main__':
     rospy.init_node('pipeline_node')
