@@ -23,7 +23,7 @@ import math
 import time
 import os
 GRIPPER = True
-TOL = 0.5
+TOL = 0.1
 
 class MRS_MAV:
     def __init__(self, mav_name):

@@ -12,7 +12,9 @@ from rospy.core import is_shutdown
 from std_msgs.msg import Bool
 
 TOL = 1
-
+'''
+ADICIONAR PARTE DO TUBOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+'''
 class TrajectoryTest():
     def __init__(self, MAV):
         self.rate = rospy.Rate(60)
@@ -185,7 +187,7 @@ class TrajectoryTest():
         return True
 
 if __name__ == "__main__":
-    rospy.init_node('test')
+    rospy.init_node('varredura')
     drone = MRS_MAV("uav1")
     c = TrajectoryTest(drone)
     c.run()

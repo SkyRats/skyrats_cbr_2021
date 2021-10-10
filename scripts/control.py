@@ -11,7 +11,7 @@ from geometry_msgs.msg import Vector3
 from std_msgs.msg import Bool
 from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
-VEL_CERTO = 0.3
+VEL_CERTO = 0.15
 
 class PrecisionLanding():
     def __init__(self, MAV):
@@ -32,13 +32,14 @@ class PrecisionLanding():
         # Attributes
         self.delay = 0
         self.is_lost = True
+        self.first_lost = 0
         self.flag = 0
         self.done = 0
         self.first = True
         self.velocity = Vector3()
         self.first_detection = 0
         talz = 15 #segundos
-        kpz = 1
+        kpz = 0.7
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
         self.pid_x = PID(-0.005, 0, -0)
@@ -156,13 +157,24 @@ class PrecisionLanding():
 
                 elif self.done != 1:  # Drone perdeu o H 
                     if flag == 1:        
-                        self.MAV.set_position(0,0,-2, relative_to_drone = True)      
+                        lost = rospy.get_rostime()
+                        self.first_lost = 1
+                        self.MAV.set_position(0,0,-3, relative_to_drone = True)      
                         rospy.loginfo("Nao estou em cima de uma cruz")
                         self.velocity.x = self.velocity.y = self.velocity.z = 0
                         for l in range(20):
                             self.vel_publisher.publish(self.velocity)
                             self.rate.sleep()
                     flag = 0
+                    if self.first_lost == 1:
+                        if rospy.get_rostime() - lost > rospy.Duration(secs=10):
+                            print("Ligou trajetoria")       
+                            for k in range(40):
+                                self.stop_publisher.publish(0)
+                                self.rate.sleep() 
+                            self.first_lost = 0
+
+
 
                 self.rate.sleep()
 

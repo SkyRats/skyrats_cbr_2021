@@ -13,8 +13,20 @@
   />
   <node
     pkg="CBR_2021"
+    type="varredura.py"
+    name="varredura"
+    output="screen"
+  /> 
+  <node
+    pkg="CBR_2021"
     type="MRS_MAV.py"
     name="MRS_MAV"
+    output="screen"
+  />
+    <node
+    pkg="CBR_2021"
+    type="tubo.py"
+    name="pipeline_detector_node"
     output="screen"
   />
 </launch> 

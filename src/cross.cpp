@@ -149,7 +149,6 @@ bool HDetector::detect(Mat frame)
   // GaussianBlur(hsvFrame, hsvFrame, Size(9, 9), 1.0);
   bilateralFilter(frame, bgrFrame, 0, 100, 0);
   cvtColor(bgrFrame, hsvFrame, COLOR_BGR2HSV);
-  imshow("Blur", hsvFrame);
   // inRange(hsvFrame, Scalar(30, 150, 0), Scalar(70, 255, 255), hsvFrame);
   inRange(hsvFrame, Scalar(20, 25, 0), Scalar(35, 255, 255), maskFrame);
 
