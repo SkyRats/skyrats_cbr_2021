@@ -4,7 +4,7 @@ import time
 from re import X
 import rospy
 import numpy as np
-from mrs_mavbase.MRS_MAV import MRS_MAV
+from MRS_MAV import MRS_MAV
 from geometry_msgs.msg import Vector3
 from rospy.core import is_shutdown
 from std_msgs.msg import Bool
@@ -20,6 +20,7 @@ class TrajectoryTest():
         self.parte_missao = 0
         self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
         self.cv_pipeline_publisher = rospy.Publisher("/pipline_detector/set_running_state", Bool, queue_size=10)
+        self.last_land_publisher = rospy.Publisher("/precision_land/last_land", Bool, queue_size=10)
 
         self.stop_sub = rospy.Subscriber("/stop_trajectory", Bool, self.stop_callback)
         self.stop = 0
@@ -46,12 +47,12 @@ class TrajectoryTest():
         rospy.loginfo("Ponto Inicial Da Trajetoria")
         while(not rospy.is_shutdown() and self.parte_missao <12 ):
             for i in range(10):
-                if(self.parte_missao == 4 or self.parte_missao == 6 or self.parte_missao == 7):
+                if(self.parte_missao == 3 or self.parte_missao == 6 or self.parte_missao == 7):
                     self.cv_control_publisher.publish(Bool(False))   
                 else:
                     self.cv_control_publisher.publish(Bool(self.verificar_area()))   #Liga a deteccao da cruz
                 
-                if(self.parte_missao == 6 or self.parte_missao == 7):
+                if(self.parte_missao == 6):
                     self.cv_pipeline_publisher.publish(Bool(True))
                 else:
                     self.cv_pipeline_publisher.publish(Bool(False))
@@ -73,7 +74,7 @@ class TrajectoryTest():
                     '''self.MAV.set_position(initial_x, initial_y - cont, self.altura)
                     cont+= self.vel'''
                     if (self.MAV.controller_data.position.y - goal_y < TOL):
-                        rospy.loginfo("Estamo perta da base 1")
+                        rospy.loginfo("Estamos perto da base 1")
                         self.parte_missao = 1
 
                 if(self.parte_missao == 1):
@@ -89,27 +90,27 @@ class TrajectoryTest():
                     rospy.loginfo("Indo para proxima base fixa")
                     self.parte_missao = 3
 
-                elif(self.parte_missao == 3):
-                    self.MAV.set_position(46,9,7)
-                    self.parte_missao = 4
-
-
-                elif (self.parte_missao == 4):          
+                elif (self.parte_missao == 3):          
                     rospy.loginfo("Indo para base 2")
-                    self.MAV.set_position(-19,9,7)
+                    self.MAV.set_position(-10,-21,self.altura)
+                    self.MAV.set_position(-10,-21,7)
                     self.MAV.set_position(-19,-21,7)
-                    self.parte_missao = 5
+                    self.parte_missao = 4
                 
-                elif (self.parte_missao == 5):   
+                elif (self.parte_missao == 4):   
                     self.MAV.set_position(-19,-21,2)
                     time.sleep(2)
-                    self.parte_missao = 6       
+                    self.parte_missao = 5    
 
-                elif self.parte_missao == 6:
+                elif self.parte_missao == 5:
                     rospy.loginfo("Indo para o Tubo")
                     self.MAV.set_position(-50,-21,5)
-                    self.parte_missao = 7
+                    self.parte_missao = 6
 
+                
+                elif self.parte_missao == 6:
+                    self.MAV.set_position(-50,-36,5)
+                    self.parte_missao = 7
                 
                 elif self.parte_missao == 7:
                     rospy.loginfo("Indo para base 3")
@@ -127,12 +128,18 @@ class TrajectoryTest():
 
                 elif self.parte_missao == 10:
                     rospy.loginfo("RTL")
+                    for i in range (40):
+                        self.last_land_publisher.publish(Bool(True))  
+                        self.rate.sleep()
                     self.MAV.set_position(10,90,6)
                     self.parte_missao = 11
 
                 elif self.parte_missao == 11:
-                    self.MAV.set_position(0,0,-4, relative_to_drone = True)
+                    self.MAV.set_position(10,90,2)
                     self.parte_missao = 12
+            
+            else:
+                self.rate.sleep()
 
             self.rate.sleep()
 

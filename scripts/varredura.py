@@ -74,7 +74,7 @@ class TrajectoryTest():
                     '''self.MAV.set_position(initial_x, initial_y - cont, self.altura)
                     cont+= self.vel'''
                     if (self.MAV.controller_data.position.y - goal_y < TOL):
-                        rospy.loginfo("Estamo perta da base 1")
+                        rospy.loginfo("Estamos perto da base 1")
                         self.parte_missao = 1
 
                 if(self.parte_missao == 1):

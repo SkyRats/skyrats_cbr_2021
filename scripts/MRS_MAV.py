@@ -261,7 +261,7 @@ if __name__ == '__main__':
 
     #mav.set_position(-50,-40,1)
     #mav.set_home()
-    #mav.run()
+    mav.run()
     #mav.set_position(46,9,5)    
     #mav.set_position(46,9,-2)
     #mav.RTL()

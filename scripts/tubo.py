@@ -20,6 +20,7 @@ class pipeline_detector:
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.encontrou_lar = 0
         self.cv = 0
+        self.soma = 0
 
 
     def cv_callback(self, data):
@@ -33,7 +34,7 @@ class pipeline_detector:
         self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
 
     def detector(self):
-        lowerblaranja = np.array([0, 110, 209])
+        lowerblaranja = np.array([0, 110, 230])
         upperblaranja = np.array([26, 160, 255])
         mask_laranja = cv2.inRange(self.hsv, lowerblaranja, upperblaranja)    
 
@@ -47,6 +48,9 @@ class pipeline_detector:
         print("Laranjas: ")
         print(soma_lar)
         if (soma_lar > MIN_LAR):
+            self.soma += 1
+
+        if(self.soma > 2):
             self.encontrou_lar = True
             rospy.loginfo("TUBO DETECTADO")
             

@@ -4,7 +4,7 @@ import rospy
 import time
 import numpy as np
 
-from mrs_mavbase.MRS_MAV import MRS_MAV
+from MRS_MAV import MRS_MAV
 from precision_landing.msg import H_info
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from geometry_msgs.msg import Vector3
@@ -24,6 +24,7 @@ class PrecisionLanding():
         self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10)
         self.base_publisher = rospy.Publisher("/base_position", Vector3, queue_size=10)
         self.stop_publisher = rospy.Publisher("/stop_trajectory", Bool, queue_size=10)
+        self.last_land_sub = rospy.Subscriber("/precision_land/last_land", Bool, self.last_land_callback)
 
         # Cam Params
         self.image_pixel_width = 752
@@ -33,6 +34,7 @@ class PrecisionLanding():
         self.delay = 0
         self.is_lost = True
         self.first_lost = 0
+        self.last_land = 0
         self.flag = 0
         self.done = 0
         self.first = True
@@ -58,6 +60,9 @@ class PrecisionLanding():
         self.pid_z.output_limits = (-1, 1)
 
 
+    def last_land_callback(self, data):
+        self.last_land = data.data
+
     def detection_callback(self, vector_data):
         # Dados enviados pelo H.cpp -> Centro do H e Proximidade do H (Area ratio)
         self.detection = vector_data
@@ -65,7 +70,7 @@ class PrecisionLanding():
         self.first_detection = 1
 
     def precision_land(self):
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and self.done != 2:
             self.done = 0
             flag =0 
 
@@ -122,34 +127,39 @@ class PrecisionLanding():
                         while not rospy.get_rostime() - now > rospy.Duration(secs=4):
                             self.rate.sleep()
                         self.MAV.disarm()
-                        base_pos_x = self.MAV.controller_data.position.x
-                        base_pos_y = self.MAV.controller_data.position.y
 
-                        rospy.loginfo("Localizacao da base:")
-                        rospy.loginfo(base_pos_x)
-                        rospy.loginfo(base_pos_y)
-                        for a in range(10):
-                            self.base_publisher.publish(base_pos_x,base_pos_y,0)
+                        if(self.last_land == 0):
+                            base_pos_x = self.MAV.controller_data.position.x
+                            base_pos_y = self.MAV.controller_data.position.y
 
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                            self.rate.sleep()
-                        self.MAV.arm()
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                            self.rate.sleep()
-                        self.MAV.takeoff()
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                            self.rate.sleep()
-                        print("Ligou trajetoria")
-                        for k in range(40):
-                            self.stop_publisher.publish(0)
-                            self.rate.sleep()
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                            self.rate.sleep()
-                        self.done = 1
+                            rospy.loginfo("Localizacao da base:")
+                            rospy.loginfo(base_pos_x)
+                            rospy.loginfo(base_pos_y)
+                            for a in range(10):
+                                self.base_publisher.publish(base_pos_x,base_pos_y,0)
+
+                            now = rospy.get_rostime()
+                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+                                self.rate.sleep()
+                            self.MAV.arm()
+                            now = rospy.get_rostime()
+                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+                                self.rate.sleep()
+                            self.MAV.takeoff()
+                            now = rospy.get_rostime()
+                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+                                self.rate.sleep()
+                            print("Ligou trajetoria")
+                            for k in range(40):
+                                self.stop_publisher.publish(0)
+                                self.rate.sleep()
+                            now = rospy.get_rostime()
+                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+                                self.rate.sleep()
+                            self.done = 1
+                        
+                        else:
+                            self.done = 2
                                         
                 elif self.first:
                     rospy.loginfo("Iniciando...")

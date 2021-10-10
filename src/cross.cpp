@@ -188,7 +188,7 @@ bool HDetector::detect(Mat frame)
     waitKey(3); // Wait for a keystroke in the window
   }
   // cout << max_w * max_h << endl;
-  if ((max_w * max_h > frame.rows * frame.cols * AREA_THRESH )&& (max_w < (max_h * 1.2)) && max_w > (max_h*0.8))
+  if ((max_w * max_h > frame.rows * frame.cols * AREA_THRESH )&& (max_w < (max_h * 2)) && max_w > (max_h*0.4))
   {
 
     detected = true;
