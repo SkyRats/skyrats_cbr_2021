@@ -18,7 +18,7 @@ class TrajectoryTest():
 
         self.Lista_das_bases = []
         self.parte_missao = 0
-        self.altura = -6        #Altura da trajetoria
+        self.altura = -7.5        #Altura da trajetoria
         self.stop = 0
         self.vel = 4
 

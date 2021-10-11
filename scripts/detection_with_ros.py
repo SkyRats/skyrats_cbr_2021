@@ -15,18 +15,16 @@ class QRDetection():
         self.bridge_object = CvBridge()
         self.cam_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw/", Image, self.cam_callback)
         self.detection = 0
-        self.first = 0
+        rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
+
 
     def cam_callback(self, data):
         try:
             self.cam_frame = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
-            self.first = 1
         except CvBridgeError as e:
             print(e)
 
     def detect(self):
-        while self.first == 0:
-            self.rate.sleep()
         rospy.loginfo("Starting QR Detection")
         self.detection = 0
 

@@ -87,8 +87,8 @@ class PrecisionLanding():
                 if not self.is_lost and self.first_detection == 1:
                     if self.detection.area_ratio < 0.12:  # Drone ainda esta longe do H
                         if(flag == 0):
+                            self.MAV.set_position(0.1,0,0,0,relative_to_drone=True)
                             rospy.loginfo("Controle PID")
-                            print("Stop trajectory")
                             for d in range(60):
                                 self.stop_publisher.publish(1)
                                 self.rate.sleep()

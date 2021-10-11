@@ -85,6 +85,7 @@ class MRS_MAV:
         self.stop = data.data
         if(self.stop == 1):
             self.flag = 1
+            
 
 
     def controller_callback(self, data):
@@ -114,8 +115,10 @@ class MRS_MAV:
         if(self.vel_x == 0 and self.vel_y == 0 and self.vel_z == 0 and relative_to_drone == False):
             rospy.wait_for_service("/" + self.mav_name + "/control_manager/reference")
 
-            while abs(self.controller_data.position.x - x) > TOL or abs(self.controller_data.position.y - y) > TOL or abs(self.controller_data.position.z - z) > TOL and self.flag == 0:
+            while (abs(self.controller_data.position.x - x) > TOL or abs(self.controller_data.position.y - y) > TOL or abs(self.controller_data.position.z - z) > TOL) and self.flag == 0:
                 self.reference(self.position_controller_header, self.position_controller)
+                print("Preso")
+                print(self.flag)
         else:
             self.reference(self.position_controller_header, self.position_controller)
         self.flag = 0
@@ -255,8 +258,8 @@ if __name__ == '__main__':
     #mav.takeoff()
     #mav.gripper("close")
     #mav.set_position(0,0,-1,hdg=0,relative_to_drone=True)
-    #mav.set_position(0, 1)
-    #mav.set_position(0,0)
+    #mav.set_position(0, 0, 7)
+    #mav.set_position(10, 90, 7)
     #mav.altitude_estimator("HEIGHT")
 
     #mav.set_position(-50,-40,1)
