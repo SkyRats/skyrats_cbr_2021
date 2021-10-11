@@ -1,20 +1,10 @@
-#from digit_recognition.digit_recog import digit_recog
-
-# menos dilatacao no warp_alpha
-# consertar reconhecimento de digitos (Digits[2] = '-') 
-# consertar digit_recog no geral
-# Lidar com quadrado da base de pouso 
-
-
 import cv2
 import numpy as np
 from imutils import contours
-import imutils
-import numpy as np
-from numpy.core.fromnumeric import shape
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image
+from MRS_MAV import MRS_MAV
 
 DEBUG = False
 DIGITS_LOOKUP = {
@@ -31,7 +21,7 @@ DIGITS_LOOKUP = {
             (1, 1, 1, 1, 0, 1, 1): 9
         }
 
-class webcam:
+class display_cv:
     def __init__(self):
         # self.cap = cv2.VideoCapture(0)
         self.rate = rospy.Rate(60)
@@ -103,8 +93,7 @@ class webcam:
                 print(np.shape(thresh))
                 cv2.waitKey(30) #pro pc do igor n morrer
             # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = imutils.grab_contours(cnts)
+            cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             # warped = frame
             
             for c in cnts:
@@ -171,9 +160,8 @@ class webcam:
         cv2.imshow("digit_recog test", thresh)
                
 
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         # cnts = cv2.findContours(image.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
         digitCnts = []
 
         # if(len(cnts) >= 20):
@@ -528,7 +516,27 @@ class webcam:
         return x
         
 
+class trajectory:
+    def __init__(self, mavbase):
+        self.mav = mavbase
+    
+    def go_to_fix(self, base):
+        if base == "pier":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(45.7, 9.8, 4, hdg= 1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(45.7, 9.8, 0.6)
+        if base == "offshore":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-19, -21, 4, hdg= 1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-19, -21, 0.6)
+
+
 if __name__ == "__main__":
     rospy.init_node("display_recognition")
-    var = webcam()
-    var.main_loop()
+    #mav = MRS_MAV("uav1")
+    #controller = trajectory(mav)
+    #controller.go_to_fix("offshore")
+    detector = display_cv()
+    detector.main_loop()
