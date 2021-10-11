@@ -10,7 +10,7 @@ windows:
   - gazebo:
       layout: tiled
       panes:
-        - waitForRos; roslaunch offshore_uav_pack offshore_rig.launch "world_name:=fase2"
+        - waitForRos; roslaunch offshore_uav_pack offshore_rig.launch
   - status:
       layout: tiled
       panes:

@@ -20,4 +20,16 @@ altitude_estimators:
   
 heading_estimators:
   active: ["PIXHAWK"]
-
+ 
+altitude:
+  # Altitude limits
+  max_default: 60.0
+  max_allowed_flight_height_garmin: 60.0
+  
+  gate:
+    garmin:
+      use_inno_gate: False
+  
+  median_filter:  
+    garmin:
+      max_diff: 20.0

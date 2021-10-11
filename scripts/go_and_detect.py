@@ -96,8 +96,9 @@ class pipeline_scanner:
         self.mav.altitude_estimator("HEIGHT")
         rospy.loginfo("Pousando")
         self.mav.land()
-        if self.lidar_range < 0.25:
-            self.mav.disarm()
+        while self.lidar_range > 0.25:
+            pass
+        self.mav.disarm()
 
 if __name__ == '__main__':
     rospy.init_node('pipeline_node')
