@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 from MRS_MAV import MRS_MAV
-from precision_landing.msg import H_info
+from CBR_2021.msg import H_info
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from geometry_msgs.msg import Vector3
 from std_msgs.msg import Bool
