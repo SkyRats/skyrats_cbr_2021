@@ -21,6 +21,7 @@ class pipeline_detector:
         self.encontrou_lar = 0
         self.cv = 0
         self.soma = 0
+        self.rate = rospy.Rate(60)
 
 
     def cv_callback(self, data):
@@ -60,6 +61,7 @@ class pipeline_detector:
         while(not rospy.is_shutdown() and self.encontrou_lar == 0):
             if self.cv:
                 self.detector()
+            self.rate.sleep()
 
 if __name__ == '__main__':
     rospy.init_node('pipeline_detector_node')

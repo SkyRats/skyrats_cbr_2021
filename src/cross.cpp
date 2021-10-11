@@ -9,7 +9,7 @@ using namespace cv;
 #include "CBR_2021/H_info.h"
 #include "std_msgs/Bool.h"
 
-#define AREA_THRESH 0.008
+#define AREA_THRESH 0.005
 #define PI 3.14159265
 
 #define vp vector<Point>
