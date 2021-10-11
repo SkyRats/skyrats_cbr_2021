@@ -94,6 +94,7 @@ class pipeline_scanner:
         self.mav.set_position(-49.5, -25, 4, relative_to_drone=False)
         self.mav.set_position(10, 90, 4, relative_to_drone=False)
         self.mav.altitude_estimator("HEIGHT")
+        self.mav.set_position(10, 90, 1.5, relative_to_drone=False)
         rospy.loginfo("Pousando")
         self.mav.land()
         while self.lidar_range > 0.25:
