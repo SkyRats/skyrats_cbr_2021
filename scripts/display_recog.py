@@ -83,11 +83,11 @@ class webcam:
             img_result = frame.copy()
             img_result[mask==0] = 0
 
-            cv2.imshow("otsu_result", otsu_result)
-            cv2.imshow("img_result", img_result)
-            cv2.imshow("otsu", otsu)
-            cv2.imshow("frame", frame)
-            cv2.waitKey(30) #pro pc do igor n morrer
+            # cv2.imshow("otsu_result", otsu_result)
+            # cv2.imshow("img_result", img_result)
+            # cv2.imshow("otsu", otsu)
+            # cv2.imshow("frame", frame)
+            # cv2.waitKey(30) #pro pc do igor n morrer
 
             #end test
 
@@ -118,7 +118,7 @@ class webcam:
                                 #cv2.rectangle(frame, (x1, y1), (x1 + w1, y1 + h1), (0,255,0))
                                 toBeWarped  = self.four_point_transform(frame, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
                                 # toBeWarped  = self.four_point_transform(otsu, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
-                                cv2.imshow("frame inside for", toBeWarped)
+                                # cv2.imshow("frame inside for", toBeWarped)
                                 # warped_alpha = self.four_point_transform(thresh, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
                                 warped_alpha = self.four_point_transform(otsu, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
                                 points = self.getPoints(warped_alpha)
@@ -163,8 +163,10 @@ class webcam:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         thresh = cv2.threshold(blurred, 0, 255,	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 4))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 5))
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        # thresh = cv2.dilate(thresh,kernel,iterations = 3)
         thresh = cv2.dilate(thresh,kernel,iterations = 2)
         cv2.imshow("digit_recog test", thresh)
                
@@ -187,13 +189,17 @@ class webcam:
             # cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
             # print(x, y, h, w)
             #print(np.shape(image)[0], np.shape(image)[1])
-            # print(float((h*w))/float((np.shape(image)[0]*np.shape(image)[1])))
-            if ((((h)/(w) <= 8 and (h)/(w) >= 2) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5) or ((h)/(w) <= 0.75 and (h)/(w) >= 0.1)) and ((float((h*w))/float((np.shape(image)[0]*np.shape(image)[1]))) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
+            # print(float((h*w))/float((np.shape(image)[0]*np.shape(image)[1]))) ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)
+            if (((h)/(w) <= 8 and (h)/(w) >= 3 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.02) or 
+            (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.06) or 
+            (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             # if (((h)/(w) <= 0.7 and (h)/(w) >= 0.35) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             #if((w<=(np.shape(image)[1])/23 and h<=(np.shape(image)[0])*(15/46)) or (w<=(np.shape(image)[1])*(7/46) and h<=(np.shape(image)[0])*(7/92)) or ((w<=np.shape(image)[1]*(19/92) and w>=(np.shape(image)[1])*(15/92)) and (h<=(np.shape(image)[0])*(17/46) and h>=(np.shape(image)[0])*(31/92)))):
             #if((w<=20 and h<=150) or (w<=70 and h<=35) or ((w<=95 and w>=75) and (h<=170 and h>=155))):
-                cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
-                digitCnts.append(c)
+                if x < (np.shape(image)[1])/2:
+                    # print(x, y, h, w)
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
+                    digitCnts.append(c)
             #cv2.imshow("teste_02", image)
             #cv2.waitKey(0)
 
@@ -212,7 +218,7 @@ class webcam:
             contours.sort_contours(linha1)
             contours.sort_contours(linha2)
         else:
-            print("No contours")
+            # print("No contours")
             return False
 
 
@@ -221,22 +227,23 @@ class webcam:
         second_number_digit_count = 0
 
         for c in linha1:
-            if first_number_digit_count < 3:
+            if first_number_digit_count < 2:
                 (x, y, w, h) = cv2.boundingRect(c)
                 roi = thresh[y:y+h, x:x+w]
                 # roi = image[y:y+h, x:x+w]
                 (roiH, roiW) = roi.shape
                 # if (((h)/(w) <= 8 and (h)/(w) >= 2)):
-                if (not ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):
+                if ((h)/(w) <= 8 and (h)/(w) >= 3):
+                # if (not (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2)):
                 # if ((h/w) >= 4 and (w/h)>=0.06):
                 #if (roiW<=(np.shape(image)[1])/23 and roiH<=(np.shape(image)[0])*(15/46)): #digit one
                     Digits.append("1")
                     first_number_digit_count += 1
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                    cv2.putText(image,"1", (x - 10, y),
+                    cv2.putText(image,"1", (x - 10, y + 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                else:                        #any other digit
+                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -260,30 +267,34 @@ class webcam:
                         Digits.append(str(digit))
                         first_number_digit_count += 1
                         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                        cv2.putText(image, str(digit), (x - 10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
+                        cv2.putText(image, str(digit), (x - 10, y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     except KeyError:
-                        continue
                         # print("first number error")
+                        continue
                         # return False
                 
         for c in linha2:
-            if second_number_digit_count < 4:
+            if second_number_digit_count < 3:
                 (x, y, w, h) = cv2.boundingRect(c)
                 roi = thresh[y:y+h, x:x+w]
                 # roi = image[y:y+h, x:x+w]
                 (roiH, roiW) = roi.shape
                 # h do menos = w do um
                 # w do menos = h/2 do um
-                if ((h)/(w) <= 0.75 and (h)/(w) >= 0.1):
+                if (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1):
                 # if ((w/h) >= 2 and (h/w)>=0.12): #-
-                    Digits.append("-")
-                    second_number_digit_count += 1
-                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                    cv2.putText(image,"minus sign", (x - 10, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+                    segROI = roi[y:h, x:w]
+                    total = cv2.countNonZero(segROI)
+                    area = (h - x) * (h - y)
+                    if float(area) > 0 and total/float(area) > 0.5:
+                        Digits.append("-")
+                        second_number_digit_count += 1
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+                        cv2.putText(image,"minus sign", (x - 10, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
                     continue
                 # elif (((h)/(w) <= 8 and (h)/(w) >= 2)):
-                elif (not ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):
+                elif ((h)/(w) <= 8 and (h)/(w) >= 3):
                 # elif ((h/w) >= 4 and (w/h)>=0.06): #digit one
                     Digits.append("1")
                     second_number_digit_count += 1
@@ -291,7 +302,7 @@ class webcam:
                     cv2.putText(image,"1", (x - 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                else:                           #any other digit
+                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -317,8 +328,8 @@ class webcam:
                         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
                         cv2.putText(image, str(digit), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     except KeyError:
-                        continue
                         # print("second number error")
+                        continue
                         # return False
         # try:
         #     primeiro_digito = int(Digits[0]+Digits[1])
@@ -348,7 +359,7 @@ class webcam:
                     i += 1
                 segundo_digito = int(''.join(segundo_digito))
         except ValueError:
-            print("error when joining digits")
+            # print("error when joining digits")
             return False
 
         # segundo_digito = ''
@@ -378,21 +389,21 @@ class webcam:
 
         if primeiro_digito > 55 or primeiro_digito < 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
-            #os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
+            # print('\a')
         else:
             print('\033[1;37;42m PERCENTUAL DE GAS DENTRO DOS CONFORMES \033[0;0m')
 
-        print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
+        # print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
 
         if segundo_digito > 5 or segundo_digito <= -5:
             print('\033[1;37;41m AJUSTE DE ZERO FORA DE CONFORMIDADE \033[0;0m')
-            #os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
+            # print('\a')
         else:
             print('\033[1;37;42m AJUSTE DE ZERO DENTRO DOS CONFORMES \033[0;0m')
 
-
+        
         cv2.imshow("teste retangulos", image)
-        cv2.waitKey(15)
+        cv2.waitKey(15)       
         return True 
         #Teste de imagem
     
