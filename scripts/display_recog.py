@@ -184,7 +184,7 @@ class display_cv:
             # if (((h)/(w) <= 0.7 and (h)/(w) >= 0.35) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             #if((w<=(np.shape(image)[1])/23 and h<=(np.shape(image)[0])*(15/46)) or (w<=(np.shape(image)[1])*(7/46) and h<=(np.shape(image)[0])*(7/92)) or ((w<=np.shape(image)[1]*(19/92) and w>=(np.shape(image)[1])*(15/92)) and (h<=(np.shape(image)[0])*(17/46) and h>=(np.shape(image)[0])*(31/92)))):
             #if((w<=20 and h<=150) or (w<=70 and h<=35) or ((w<=95 and w>=75) and (h<=170 and h>=155))):
-                if (x + w) < (4*(np.shape(image)[1]))/6:
+                if (x + w) < (5*(np.shape(image)[1]))/6:
                     # print(x, y, h, w)
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
                     digitCnts.append(c)
