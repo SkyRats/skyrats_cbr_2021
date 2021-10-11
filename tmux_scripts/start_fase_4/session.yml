@@ -18,7 +18,7 @@ windows:
   - spawn:
       layout: tiled
       panes:
-        - waitForSimulation; rosservice call /mrs_drone_spawner/spawn "1 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/uav1_pos.yaml --enable-bluefox-camera"
+        - waitForSimulation; rosservice call /mrs_drone_spawner/spawn "1 $UAV_TYPE --enable-rangefinder --enable-ground-truth --pos_file `pwd`/uav1_pos.yaml --enable-bluefox-camera --enable_mechanic_gripper"
         - 'history -s roslaunch offshore_uav_pack spawn_wamv1.launch ";" 
           roslaunch offshore_uav_pack spawn_wamv2.launch ";"
           roslaunch offshore_uav_pack spawn_wamv3.launch ";"
@@ -28,7 +28,7 @@ windows:
   - control:
       layout: tiled
       panes:
-        - waitForOdometry; roslaunch mrs_uav_general config_odometry:=./custom_configs/odometry.yaml
+        - waitForOdometry; roslaunch mrs_uav_general core.launch config_odometry:=./custom_configs/odometry.yaml
   - takeoff:
       layout: tiled
       panes:
