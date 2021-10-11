@@ -13,8 +13,8 @@
   />
   <node
     pkg="CBR_2021"
-    type="varredura.py"
-    name="varredura"
+    type="caminho_longo.py"
+    name="longo"
     output="screen"
   /> 
   <node

@@ -177,7 +177,7 @@ class PrecisionLanding():
                             self.rate.sleep()
                     flag = 0
                     if self.first_lost == 1:
-                        if rospy.get_rostime() - lost > rospy.Duration(secs=10):
+                        if rospy.get_rostime() - lost > rospy.Duration(secs=5):
                             print("Ligou trajetoria")       
                             for k in range(40):
                                 self.stop_publisher.publish(0)

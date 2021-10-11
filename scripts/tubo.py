@@ -9,7 +9,7 @@ import time
 from std_msgs.msg import Bool
 
 
-MIN_LAR = 10000
+MIN_LAR = 1200
 
 ########## DETECTA LARANJA  ################################################
 class pipeline_detector:
@@ -45,8 +45,6 @@ class pipeline_detector:
                 if  mask_laranja[i, j] >= 200:
                     soma_lar += 1
 
-        print("Laranjas: ")
-        print(soma_lar)
         if (soma_lar > MIN_LAR):
             self.soma += 1
 
