@@ -184,7 +184,7 @@ class display_cv:
             # if (((h)/(w) <= 0.7 and (h)/(w) >= 0.35) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             #if((w<=(np.shape(image)[1])/23 and h<=(np.shape(image)[0])*(15/46)) or (w<=(np.shape(image)[1])*(7/46) and h<=(np.shape(image)[0])*(7/92)) or ((w<=np.shape(image)[1]*(19/92) and w>=(np.shape(image)[1])*(15/92)) and (h<=(np.shape(image)[0])*(17/46) and h>=(np.shape(image)[0])*(31/92)))):
             #if((w<=20 and h<=150) or (w<=70 and h<=35) or ((w<=95 and w>=75) and (h<=170 and h>=155))):
-                if x < (np.shape(image)[1])/2:
+                if (x + w) < (4*(np.shape(image)[1]))/6:
                     # print(x, y, h, w)
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
                     digitCnts.append(c)
@@ -225,11 +225,15 @@ class display_cv:
                 # if (not (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2)):
                 # if ((h/w) >= 4 and (w/h)>=0.06):
                 #if (roiW<=(np.shape(image)[1])/23 and roiH<=(np.shape(image)[0])*(15/46)): #digit one
-                    Digits.append("1")
-                    first_number_digit_count += 1
-                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                    cv2.putText(image,"1", (x - 10, y + 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
+                    segROI = roi[y:h, x:w]
+                    total = cv2.countNonZero(segROI)
+                    area = (h - x) * (h - y)
+                    if float(area) > 0 and total/float(area) > 0.5:
+                        Digits.append("1")
+                        first_number_digit_count += 1
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+                        cv2.putText(image,"1", (x - 10, y + 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
                 elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
@@ -284,11 +288,15 @@ class display_cv:
                 # elif (((h)/(w) <= 8 and (h)/(w) >= 2)):
                 elif ((h)/(w) <= 8 and (h)/(w) >= 3):
                 # elif ((h/w) >= 4 and (w/h)>=0.06): #digit one
-                    Digits.append("1")
-                    second_number_digit_count += 1
-                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                    cv2.putText(image,"1", (x - 10, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
+                    segROI = roi[y:h, x:w]
+                    total = cv2.countNonZero(segROI)
+                    area = (h - x) * (h - y)
+                    if float(area) > 0 and total/float(area) > 0.5:
+                        Digits.append("1")
+                        first_number_digit_count += 1
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+                        cv2.putText(image,"1", (x - 10, y + 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
                 elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
