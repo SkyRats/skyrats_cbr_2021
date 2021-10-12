@@ -28,13 +28,14 @@ class pipeline_detector:
         self.cv = data.data
 
     def camera_callback(self, data):
-        cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.rows, self.cols, a = cv_image.shape
-        self.cv_image = cv_image[0: int(self.rows - (self.rows*0.2)) , int(self.cols*0.2) : self.cols]
-        self.rows, self.cols, b = self.cv_image.shape
-        self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
+        self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
+        
 
     def detector(self):
+        self.rows, self.cols, b = self.cv_image.shape
+        self.cv_image_cortada = self.cv_image[0: int(self.rows - (self.rows*0.2)) , int(self.cols*0.2) : self.cols]
+        self.rows, self.cols, b = self.cv_image_cortada.shape
+        self.hsv = cv2.cvtColor(self.cv_image_cortada,cv2.COLOR_BGR2HSV)
         lowerblaranja = np.array([0, 110, 230])
         upperblaranja = np.array([26, 160, 255])
         mask_laranja = cv2.inRange(self.hsv, lowerblaranja, upperblaranja)    

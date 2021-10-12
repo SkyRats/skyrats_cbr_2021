@@ -11,7 +11,7 @@ from geometry_msgs.msg import Vector3, Point
 from std_msgs.msg import Bool
 from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
-VEL_CERTO = 0.15
+VEL_CERTO = 0.09
 
 class PrecisionLanding():
     def __init__(self, MAV):
@@ -26,7 +26,6 @@ class PrecisionLanding():
         self.last_time = time.time()
         self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10) 
         self.give_up_publisher = rospy.Publisher("/precision_landing/giveup", Bool, queue_size=10)
-        self.qr_running = rospy.Subscriber("/qrdetection/set_running_state", Bool, self.qr_running_callback)
 
         #self.last_land_sub = rospy.Subscriber("/precision_land/last_land", Bool, self.last_land_callback)
         self.running_pub = rospy.Publisher("/qrdetection/set_running_state", Bool, queue_size=10)  # sends data that tells when to start and stop detection
@@ -61,7 +60,7 @@ class PrecisionLanding():
 
         # Limitacao da saida
         self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
-        self.pid_z.output_limits = (-1, 1)
+        self.pid_z.output_limits = (-0.5, 0.5)
 
 
     '''def qrcode_center_callback(self, data):
@@ -74,8 +73,6 @@ class PrecisionLanding():
 
         self.last_time = time.time()
         self.first_detection = 1'''
-    def qr_running_callback(self, data):
-        self.qr = data.data
 
     def done_callback(self, data):
         self.done = data.data
@@ -91,8 +88,8 @@ class PrecisionLanding():
         while not rospy.is_shutdown():
             self.done = 0
             flag =0 
-
             while(self.done == 0):
+
                 self.delay = time.time() - self.last_time
                 if self.first:
                     self.is_lost = True
@@ -103,12 +100,13 @@ class PrecisionLanding():
                         self.is_lost = 1
                 
                 if not self.is_lost and self.first_detection == 1:
+                    print("Area: " + str(self.detection.area_ratio))
                     if self.done == 0:
-                        if self.detection.area_ratio < 0.8:  # Drone ainda esta longe do H
+                        if self.detection.area_ratio < 0.35:  # Drone ainda esta longe do H
                             if(flag == 0):
                                 flag = 1
                             
-                            if(self.detection.area_ratio > 0.45):
+                            if(self.detection.area_ratio > 0.15):
                                 for i in range(20):
                                     self.running_pub.publish(Bool(True))
                                     self.rate.sleep
@@ -125,12 +123,20 @@ class PrecisionLanding():
                                 self.vel_publisher.publish(self.velocity)
                                 self.rate.sleep()
 
-                    else:
-                        self.velocity.x = self.velocity.y = self.velocity.z = 0
-                        for j in range(40):
-                            self.vel_publisher.publish(self.velocity)
-                            self.rate.sleep()
-                    
+                        else:
+                            self.velocity.x = self.velocity.y = self.velocity.z = 0
+                            for j in range(40):
+                                self.vel_publisher.publish(self.velocity)
+                                self.rate.sleep()
+                            self.MAV.land()
+                            self.MAV.disarm()
+                            now = rospy.get_rostime()
+                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+                                self.rate.sleep()
+                            for k in range(40):
+                                self.give_up_publisher.publish(1)
+                                self.rate.sleep()
+
 
                 elif self.first:
                     rospy.loginfo("Iniciando...")
@@ -155,13 +161,6 @@ class PrecisionLanding():
                                 self.rate.sleep() 
                             self.first_lost = 0
                     
-                    if self.qr_running:
-                        lost = rospy.get_rostime()
-                        if rospy.get_rostime() - lost > rospy.Duration(secs=10):
-                            print("Desisto dessa base")       
-                        for k in range(40):
-                            self.give_up_publisher.publish(1)
-                            self.rate.sleep() 
 
                 self.rate.sleep()
 

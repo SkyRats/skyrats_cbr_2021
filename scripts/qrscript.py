@@ -45,21 +45,25 @@ def run():
     global velocity 
     velocity = Vector3()
     global bases 
-    bases = [["A",0,0,0],["B",0,0,0],["C",0,0,0],["D",-54,-34,-0.5],["E", -19.5,-20,3.5]] 
+    bases = [["A",0,0,0],["B",0,0,0],["C",30,40,-10],["D",-54,-34,-0.5],["E", -19.5,-20,3.5]] 
     bases_visitadas = []
     giveup = False
+    alto = 0
 
 
-
-
+    #x < -19 .5    y < 21
     #cv_control_publisher = rospy.Publisher("/qrcode_finder/set_running_state", Bool, queue_size=10)
-    drone.set_position(-19.5, -21, 8)
-    drone.set_position(-19.5, -21, 5)
+    drone.set_position(-19.5, -21, 8,1.57)
+    drone.set_position(-19.5, -21, 5,1.57)
     for lista in bases:
         if abs(lista[1] + 19.5) < TOL_BASE and abs(lista[2] + 21) < TOL_BASE:
             bases_visitadas.append(str(lista[0]))
-
+   
+    now = rospy.get_rostime()
     while(qrdetection == False and not giveup):
+        if rospy.get_rostime() - now > rospy.Duration(secs=50):
+                print("Desisto dessa base")
+                giveup = 1
         for i in range(40):
             #running_pub.publish(Bool(True))
             cv_control_publisher.publish(Bool(True))
@@ -70,20 +74,43 @@ def run():
         cv_control_publisher.publish(Bool(False))
         rate.sleep()
     vel0()
+    now = rospy.get_rostime()
+    while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+        rate.sleep()
+    drone.arm()
+    now = rospy.get_rostime()
+    while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+        rate.sleep()
+    drone.takeoff()
     rospy.loginfo("Bases visitadas: " + str(bases_visitadas))
 
     while len(bases_visitadas) < 5:
-        drone.set_position(drone.controller_data.position.x,drone.controller_data.position.y,30)
         if qrdata in bases_visitadas:
             for lista in bases:
                 if lista[0] not in bases_visitadas:
                     x,y,z = coordenadas_base(lista[0])
         else:
             x,y,z = coordenadas_base(qrdata)
-        drone.set_position(x,y,30)
-        drone.set_position(x,y,z+1)
-        
+
+        if (x < -19.5 and y < 21) or alto == 1:
+            drone.set_position(drone.controller_data.position.x,drone.controller_data.position.y,30,1.57)
+            drone.set_position(x,y,30,1.57)
+            if alto == 1:
+                alto = 0
+            else:
+                alto = 1
+        else:
+            drone.set_position(drone.controller_data.position.x,drone.controller_data.position.y,9,1.57)
+            drone.set_position(x,y,9,1.57)
+
+
+        drone.set_position(x,y,z+3,1.57)
+        now = rospy.get_rostime()
+                        
         while(qrdetection == False and not giveup):
+            if rospy.get_rostime() - now > rospy.Duration(secs=50):
+                print("Desisto dessa base")
+                giveup = 1
             for i in range(40):
                 #running_pub.publish(Bool(True))
                 cv_control_publisher.publish(Bool(True))
@@ -97,7 +124,30 @@ def run():
             if abs(lista[1] - x) < TOL_BASE and abs(lista[2] - y) < TOL_BASE:
                 bases_visitadas.append(str(lista[0]))
         vel0()
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+            rate.sleep()
+        drone.arm()
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
+            rate.sleep()
+        drone.takeoff()
         rospy.loginfo("Bases visitadas: " + str(bases_visitadas))
+
+    if alto == 1:
+        drone.set_position(drone.controller_data.position.x,drone.controller_data.position.y,30,1.57)
+        drone.set_position(10,90,30,1.57)
+            
+    else:
+        drone.set_position(drone.controller_data.position.x,drone.controller_data.position.y,9,1.57)
+        drone.set_position(10,90,9,1.57)
+    
+    drone.set_position(10,90,2,1.57)
+    drone.land()
+    now = rospy.get_rostime()
+    while not rospy.get_rostime() - now > rospy.Duration(secs=3):
+        rate.sleep()
+    drone.disarm()
 
 def coordenadas_base(letra):
     for lista in bases:

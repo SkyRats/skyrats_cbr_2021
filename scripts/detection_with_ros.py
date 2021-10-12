@@ -50,8 +50,9 @@ class QRDetection():
 
                 qr_result = decode(img_bw)
                 for barcode in qr_result:
-                    for i in range(10):
+                    for i in range(20):
                         self.detection_pub.publish(Bool(True))
+                        self.rate.sleep()
                     self.detection += 1
                     (x, y, w, h) = barcode.rect
                     cv2.rectangle(self.cam_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
@@ -59,12 +60,12 @@ class QRDetection():
                     # the barcode data is a bytes object so if we want to draw it
                     # on our output image we need to convert it to a string first
                     barcodeData = barcode.data.decode("utf-8")
-                    barcodeType = barcode.type
                     if(barcodeData != barcode_antigo):
                         barcode_antigo = barcodeData
                         flag = 0
-                    for i in range(10):
+                    for i in range(20):
                         self.data_pub.publish(String(barcodeData))
+                        self.rate.sleep()
                     if(flag == 0):
                         #rospy.loginfo("Type: " + str(barcodeType))
                         rospy.loginfo("QRCODE: " + str(barcodeData))
