@@ -5,12 +5,13 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image, Range
 from MRS_MAV import MRS_MAV
+# import imutils
 
 DEBUG = False
 DIGITS_LOOKUP = {
             (1, 1, 1, 0, 1, 1, 1): 0,
-            (0, 0, 1, 0, 0, 1, 0): 1,
-            (1, 0, 1, 1, 1, 1, 0): 2,
+            # (0, 0, 1, 0, 0, 1, 0): 1,
+            (1, 0, 1, 1, 1, 0, 1): 2,
             (1, 0, 1, 1, 1, 1, 1): 3,
             (1, 0, 1, 1, 0, 1, 1): 3,
             (0, 1, 1, 1, 0, 1, 0): 4,
@@ -95,6 +96,7 @@ class display_cv:
                 cv2.waitKey(30) #pro pc do igor n morrer
             # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             # cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            # cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             # cnts = imutils.grab_contours(cnts)
             # warped = frame
@@ -106,7 +108,7 @@ class display_cv:
                     for c2 in cnts:
                         (x2, y2, w2, h2) = cv2.boundingRect(c2)
                         if( (x2 > x1) and (y2 > y1) and (x1 + w1 > x2 + w2) and (y1 + h1 > y2 + h2) ):
-                            if i >= 10:
+                            if i >= 8:
                                 #cv2.rectangle(frame, (x1, y1), (x1 + w1, y1 + h1), (0,255,0))
                                 toBeWarped  = self.four_point_transform(frame, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
                                 # toBeWarped  = self.four_point_transform(otsu, np.array([[x1, y1], [x1, y1 + h1], [x1 + w1, y1], [x1 + w1, y1 + h1]], dtype="float32"))
@@ -153,13 +155,13 @@ class display_cv:
 
         #Tratamento de imagem
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        blurred = cv2.GaussianBlur(gray, (1, 1), 0)
         thresh = cv2.threshold(blurred, 0, 255,	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 4))
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 5))
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
         # thresh = cv2.dilate(thresh,kernel,iterations = 3)
-        thresh = cv2.dilate(thresh,kernel,iterations = 2)
+        thresh = cv2.dilate(thresh,kernel,iterations = 1)
         cv2.imshow("digit_recog test", thresh)
         cv2.waitKey(15)
 
@@ -184,8 +186,8 @@ class display_cv:
             #print(np.shape(image)[0], np.shape(image)[1])
             # print(float((h*w))/float((np.shape(image)[0]*np.shape(image)[1]))) ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)
             if ((h/w <= 8 and (h)/(w) >= 3 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.019) or 
-            (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.06) or 
-            (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
+            (float(h)/float(w) >= 1.7 and float(h)/float(w) <= 2.8 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.045) or 
+            (float(h)/float(w) <= 0.90 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             # if (((h)/(w) <= 0.7 and (h)/(w) >= 0.35) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             #if((w<=(np.shape(image)[1])/23 and h<=(np.shape(image)[0])*(15/46)) or (w<=(np.shape(image)[1])*(7/46) and h<=(np.shape(image)[0])*(7/92)) or ((w<=np.shape(image)[1]*(19/92) and w>=(np.shape(image)[1])*(15/92)) and (h<=(np.shape(image)[0])*(17/46) and h>=(np.shape(image)[0])*(31/92)))):
             #if((w<=20 and h<=150) or (w<=70 and h<=35) or ((w<=95 and w>=75) and (h<=170 and h>=155))):
@@ -193,10 +195,10 @@ class display_cv:
                     # print(x, y, h, w)
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
                     digitCnts.append(c)
-            cv2.imshow("teste_02", image)
-            #cv2.waitKey(0)
+        cv2.imshow("teste_02", image)
+        # cv2.waitKey(0)
 
-        digitCnts.sort(reverse=True, key=self.sorter)
+        # digitCnts.sort(reverse=True, key=self.sorter)
         linha1 = []
         linha2 = []
 
@@ -206,6 +208,9 @@ class display_cv:
                 linha1.append(c)
             else:
                 linha2.append(c)
+
+        linha1.sort(reverse=True, key=self.sorter)
+        linha2.sort(reverse=False, key=self.sorter)
         
         if len(linha1) > 0 and len(linha2) > 0:
             contours.sort_contours(linha1)
@@ -236,11 +241,11 @@ class display_cv:
                     if float(area) > 0 and total/float(area) > 0.5:
                         Digits.append("1")
                         first_number_digit_count += 1
-                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 1)
                         cv2.putText(image,"1", (x - 10, y + 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8): #any other digit
+                elif (float(h)/float(w) >= 1.7 and float(h)/float(w) <= 2.8): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -260,7 +265,7 @@ class display_cv:
                         # print(type(segROI))
                         total = cv2.countNonZero(segROI)
                         area = (xB - xA) * (yB - yA)
-                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
+                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[int(np.shape(segROI)[0]/2), int(np.shape(segROI)[1]/2)] != 0:
                         # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
                     try:
@@ -285,15 +290,15 @@ class display_cv:
                 (roiH, roiW) = roi.shape
                 # h do menos = w do um
                 # w do menos = h/2 do um
-                if (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1):
+                if (float(h)/float(w) <= 0.9 and float(h)/float(w) >= 0.1):
                 # if ((w/h) >= 2 and (h/w)>=0.12): #-
                     segROI = roi[0:h, 0:w]
                     total = cv2.countNonZero(segROI)
                     area = (h) * (w)
                     if float(area) > 0 and total/float(area) > 0.5:
-                        Digits.append("-")
+                        Digits.append('-')
                         second_number_digit_count += 1
-                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 1)
                         cv2.putText(image,"minus sign", (x - 10, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
                     continue
@@ -306,11 +311,11 @@ class display_cv:
                     if float(area) > 0 and total/float(area) > 0.5:
                         Digits.append("1")
                         second_number_digit_count += 1
-                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-                        cv2.putText(image,"1", (x - 10, y + 30),
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 1)
+                        cv2.putText(image,"1", (x - 10, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8): #any other digit
+                elif (float(h)/float(w) >= 1.7 and float(h)/float(w) <= 2.8): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -333,6 +338,7 @@ class display_cv:
                         if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
                         # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
+                    # print(tuple(on))
                     try:
                         digit = DIGITS_LOOKUP[tuple(on)]
                         Digits.append(str(digit))
@@ -351,6 +357,7 @@ class display_cv:
         
         primeiro_digito = 0
         i = 0
+        # print(Digits)
         try:
             if first_number_digit_count > 0:
                 while i < first_number_digit_count:
@@ -358,12 +365,12 @@ class display_cv:
                     i += 1
 
             segundo_digito = ''
-            if i < first_number_digit_count + second_number_digit_count and Digits[i] == "-":
+            if (i < first_number_digit_count + second_number_digit_count) and (Digits[i] == '-'):
                 while(i < first_number_digit_count + second_number_digit_count):
                     segundo_digito += Digits[i]
                     i += 1
                 segundo_digito = int(''.join(segundo_digito))
-                segundo_digito *= -1
+                # segundo_digito *= -1
             else:
                 while(i < first_number_digit_count + second_number_digit_count):
                     segundo_digito += Digits[i]
@@ -414,10 +421,10 @@ class display_cv:
 
         
         cv2.imshow("teste retangulos", image)
-        if segundo_digito == 1:
-            cv2.waitKey(0)
-        else:
-            cv2.waitKey(15)       
+        # if segundo_digito == 101:
+        #     cv2.waitKey(0)
+        # else:
+        cv2.waitKey(15)       
         return True 
         #Teste de imagem
     
@@ -540,39 +547,96 @@ class display_cv:
     def sorter(self, c):
         (x, y, w, h) = cv2.boundingRect(c)
         return x
+
+    def sorter2(self, c):
+        (x, y, w, h) = cv2.boundingRect(c)
+        return y
         
+#class center_display:
+#    def __init__(self, mav, cv):
+#        self.cv = cv
+#        self.mav = mav
+#        self.frame = cv.cam_frame
+#        self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+#    
+#    def display_center(self):
+#        while True:
+#            self.frame = self.cv.cam_frame
+#            self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+#            lowerbpreto = np.array([0, 0, 0])
+#            upperbpreto = np.array([4, 4, 4])
+#            mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
+#            kernel = np.ones((5,5), np.uint8)
+#            #mask_preto = cv2.erode(mask_preto, kernel, iterations=1)
+#            mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
+#            contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#            if len(contours) == 0:
+#                pass
+#            try:
+#                M = cv2.moments(contours[0])
+#            except IndexError:
+#                continue
+#            try: 
+#                cx = int(M['m10']/M['m00'])
+#                cy = int(M['m01']/M['m00'])
+#            except ZeroDivisionError:
+#                continue
+#            cv2.drawContours(self.frame, contours, -1, (0, 255, 0), 3)
+#            cv2.imshow('frame',self.frame)
+#            cv2.waitKey(15)
+#            print(cx,cy, np.shape(self.frame))
+#            return cx, cy
+#    
+#    def centralize(self):
+#        x,y = self.display_center()
+#        while (x > 245 or x < 235) or (y > 381 or y < 371):
+#            x,y = self.display_center()
+#            print(x,y)
+#            if x > 245:
+#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y + 0.12)
+#            if x < 235:
+#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y - 0.12)
+#            if y > 381:
+#                self.mav.set_position(self.mav.controller_data.position.x + 0.12, self.mav.controller_data.position.y)
+#            if y < 371:
+#                self.mav.set_position(self.mav.controller_data.position.x - 0.12, self.mav.controller_data.position.y)
+#        #self.mav.set_position(self.mav.controller_data.position.x - 0.15, self.mav.controller_data.position.y + 0.15)
+
 
 class trajectory:
-    def __init__(self, mavbase, detector):
+    def __init__(self, mavbase, detector): #, center_display
         self.mav = mavbase
         self.detector = detector
+        #self.center = center_display
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
     
     def lidar_callback(self,data):
         self.lidar_range = data.range
     
     def go_to_fix(self, base):
-        if base == "pier":
+        if base == "offshore1":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(45.7, 9.8, 4, hdg= 1.57)
+            self.mav.set_position(-19.10, -21.1, 4, hdg= 1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45.7, 9.8, 0.6)
-        if base == "offshore":
+            self.mav.set_position(-19.10, -21.1, 0.55)
+
+        if base == "offshore2":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-19, -21, 4, hdg= 1.57)
+            self.mav.set_position(-50, -21, 4, hdg=1.57)
+            self.mav.set_position(-53.7, -35.2, 4, hdg=1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-19, -21, 0.6)
-        
+            self.mav.set_position(-53.7, -35.2, 0.55)
+
     def mission_start(self):
         rospy.loginfo("Indo para a base do pier")
-        self.go_to_fix("pier")
+        self.go_to_fix("offshore1")
         #self.detector.main_loop()
 
         rospy.loginfo("Indo para a base offshore")
-        self.go_to_fix("offshore")
+        self.go_to_fix("offshore2")
         #self.detector.main_loop()
 
-        rospy.loginfo("Missão concluida, retornando para a base costeira")
+        rospy.loginfo("Missao concluida, retornando para a base costeira")
         self.mav.altitude_estimator("BARO")
         self.mav.set_position(10, 90, 4, hdg= 1.57)
         self.mav.altitude_estimator("HEIGHT")
@@ -588,7 +652,11 @@ if __name__ == "__main__":
     rospy.init_node("display_recognition")
     mav = MRS_MAV("uav1")
     detector = display_cv()
-    controller = trajectory(mav, detector)
-    controller.mission_start()
-    #controller.go_to_fix("offshore")
-    #detector.main_loop()
+    #center = center_display(mav, detector)
+    #controller = trajectory(mav, detector)
+    #controller.mission_start()
+    #controller.go_to_fix("offshore2")
+    #center.centralize()
+    detector.main_loop()
+    #mav.takeoff()
+    #/uav1/bluefox_optflow/image_raw/
