@@ -3,9 +3,8 @@ import numpy as np
 from imutils import contours
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
-from sensor_msgs.msg import Image
-import imutils
-# from MRS_MAV import MRS_MAV
+from sensor_msgs.msg import Image, Range
+from MRS_MAV import MRS_MAV
 
 DEBUG = False
 DIGITS_LOOKUP = {
@@ -95,9 +94,9 @@ class display_cv:
                 print(np.shape(thresh))
                 cv2.waitKey(30) #pro pc do igor n morrer
             # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            # cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = imutils.grab_contours(cnts)
+            # cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            # cnts = imutils.grab_contours(cnts)
             # warped = frame
             
             for c in cnts:
@@ -164,9 +163,9 @@ class display_cv:
         cv2.imshow("digit_recog test", thresh)
         cv2.waitKey(15)
 
-        # cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
+        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = imutils.grab_contours(cnts)
         # cnts = cv2.findContours(image.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         digitCnts = []
 
@@ -544,8 +543,13 @@ class display_cv:
         
 
 class trajectory:
-    def __init__(self, mavbase):
+    def __init__(self, mavbase, detector):
         self.mav = mavbase
+        self.detector = detector
+        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
+    
+    def lidar_callback(self,data):
+        self.lidar_range = data.range
     
     def go_to_fix(self, base):
         if base == "pier":
@@ -558,12 +562,33 @@ class trajectory:
             self.mav.set_position(-19, -21, 4, hdg= 1.57)
             self.mav.altitude_estimator("HEIGHT")
             self.mav.set_position(-19, -21, 0.6)
+        
+    def mission_start(self):
+        rospy.loginfo("Indo para a base do pier")
+        self.go_to_fix("pier")
+        #self.detector.main_loop()
+
+        rospy.loginfo("Indo para a base offshore")
+        self.go_to_fix("offshore")
+        #self.detector.main_loop()
+
+        rospy.loginfo("Missão concluida, retornando para a base costeira")
+        self.mav.altitude_estimator("BARO")
+        self.mav.set_position(10, 90, 4, hdg= 1.57)
+        self.mav.altitude_estimator("HEIGHT")
+        self.mav.set_position(10, 90, 1.5, hdg= 1.57)
+        rospy.loginfo("Pousando")
+        self.mav.land()
+        while self.lidar_range > 0.25:
+            pass
+        self.mav.disarm()
 
 
 if __name__ == "__main__":
     rospy.init_node("display_recognition")
-    #mav = MRS_MAV("uav1")
-    #controller = trajectory(mav)
-    #controller.go_to_fix("offshore")
+    mav = MRS_MAV("uav1")
     detector = display_cv()
-    detector.main_loop()
+    controller = trajectory(mav, detector)
+    controller.mission_start()
+    #controller.go_to_fix("offshore")
+    #detector.main_loop()
