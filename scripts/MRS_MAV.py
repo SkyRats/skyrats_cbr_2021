@@ -117,8 +117,7 @@ class MRS_MAV:
 
             while (abs(self.controller_data.position.x - x) > TOL or abs(self.controller_data.position.y - y) > TOL or abs(self.controller_data.position.z - z) > TOL) and self.flag == 0:
                 self.reference(self.position_controller_header, self.position_controller)
-                print("Preso")
-                print(self.flag)
+
         else:
             self.reference(self.position_controller_header, self.position_controller)
         self.flag = 0
@@ -256,18 +255,9 @@ if __name__ == '__main__':
     #mav.disarm()
     #mav.arm()
     #mav.takeoff()
-    #mav.gripper("close")
-    #mav.set_position(0,0,-1,hdg=0,relative_to_drone=True)
-    #mav.set_position(0, 0, 7)
-    #mav.set_position(10, 90, 7)
+    #mav.set_position(0, 0, -2, 0, relative_to_drone=True) # 55, -18, 50    -50, -18, 50
+    #mav.gripper("down")
+    #mav.set_position(-54, -35, 10) # 55, -18, 50    -50, -18, 50
     #mav.altitude_estimator("HEIGHT")
-
-    #mav.set_position(-50,-40,1)
-    #mav.set_home()
     mav.run()
-    #mav.set_position(46,9,5)    
-    #mav.set_position(46,9,-2)
     #mav.RTL()
-    #mav.input_trajectory([[10,92,12], [12,92,12]],2, loop=True)
-    #mav.stop_trajectory_tracking()
-    #mav.input_trajectory([[20,90,12],[20,-30,12]],60, loop=True)

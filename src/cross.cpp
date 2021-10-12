@@ -90,9 +90,9 @@ void HDetector::image_cb(const sensor_msgs::ImageConstPtr &img)
       msg.area_ratio = this->getArea();
       
       
-      //cout << "Centro em x: " << msg.center_x << endl;
-      //cout << "Centro em y: " << msg.center_y << endl;
-      //cout << "Area ratio " << msg.area_ratio << endl;
+      cout << "Centro em x: " << msg.center_x << endl;
+      cout << "Centro em y: " << msg.center_y << endl;
+      cout << "Area ratio " << msg.area_ratio << endl;
       
 
       this->h_pub.publish(msg);
