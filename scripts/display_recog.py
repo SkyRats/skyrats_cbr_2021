@@ -412,7 +412,7 @@ class display_cv:
             print('\033[1;37;42m PERCENTUAL DE GAS DENTRO DOS CONFORMES \033[0;0m')
 
         # print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
-        #time.sleep(35)
+        time.sleep(35)
 
         print(segundo_digito)
         if segundo_digito > 5 or segundo_digito <= -5:
