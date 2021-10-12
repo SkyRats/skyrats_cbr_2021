@@ -11,7 +11,9 @@ from geometry_msgs.msg import Vector3
 from std_msgs.msg import Bool
 from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
-VEL_CERTO = 0.12
+from sensor_msgs.msg import Range
+
+VEL_CERTO = 0.16
 
 class PrecisionLanding():
     def __init__(self, MAV):
@@ -24,6 +26,7 @@ class PrecisionLanding():
         self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10)
         self.base_publisher = rospy.Publisher("/base_position", Vector3, queue_size=10)
         self.land_pub = rospy.Publisher("/precision_land/land", Bool, queue_size=10)
+        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
 
         # Cam Params
         self.image_pixel_width = 752
@@ -39,25 +42,27 @@ class PrecisionLanding():
         self.velocity = Vector3()
         self.first_detection = 0
         talz = 15 #segundos
-        kpz = 0.6
+        kpz = 1
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
-        self.pid_x = PID(-0.005, 0, -0)
-        self.pid_y = PID(0.006, 0, 0)
+        self.pid_x = PID(-0.007, 0, -0)
+        self.pid_y = PID(0.007, 0, 0)
         # Negative parameters (CV's -y -> Frame's +z)
         self.pid_z = PID(-kpz, -kpz/talz, 0)
         self.pid_w = PID(0, 0, 0)  # Orientation
 
         self.pid_x.setpoint = self.image_pixel_height/2  # y size
         self.pid_y.setpoint = self.image_pixel_width/2  # x
-        self.pid_z.setpoint = 0.12 #Podemos mudar para um lidar (fazer um filtro)
+        self.pid_z.setpoint = 0.7 #Podemos mudar para um lidar (fazer um filtro)
         self.pid_w.setpoint = 0  # orientation
 
         # Limitacao da saida
-        self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
+        self.pid_x.output_limits = self.pid_y.output_limits = (-1.2, 1.2)
         self.pid_z.output_limits = (-1, 1)
 
-
+    def lidar_callback(self,data):
+        self.lidar_range = data.range
+        
     def detection_callback(self, vector_data):
         # Dados enviados pelo H.cpp -> Centro do H e Proximidade do H (Area ratio)
         self.detection = vector_data
@@ -80,7 +85,7 @@ class PrecisionLanding():
                         self.is_lost = 1
                 
                 if not self.is_lost and self.first_detection == 1:
-                    if self.detection.area_ratio < 0.42:  # Drone ainda esta longe do H
+                    if self.detection.area_ratio < 0.35:  # Drone ainda esta longe do H
                         if(flag == 0):
                             rospy.loginfo("Controle PID")
                             flag = 1
@@ -108,41 +113,19 @@ class PrecisionLanding():
                         # Caso o drone esteja suficientemente perto do H
                         
                         #self.MAV.set_position(0,-0.2 ,0,relative_to_drone=True)
-
+                        now = rospy.get_rostime()
+                        while not rospy.get_rostime() - now > rospy.Duration(secs=1):
+                            self.rate.sleep()
+                        self.MAV.altitude_estimator("HEIGHT")
+                        self.MAV.set_position(self.MAV.controller_data.position.x,self.MAV.controller_data.position.y,0.55)
                         self.MAV.land()
+                        while self.lidar_range > 0.25:
+                            pass
                         self.MAV.disarm()
                         for i in range(40):
                             self.land_pub.publish(Bool(True))
                             self.rate.sleep()
 
-                        '''if(self.last_land == 0):
-                            base_pos_x = self.MAV.controller_data.position.x
-                            base_pos_y = self.MAV.controller_data.position.y
-
-                            rospy.loginfo("Localizacao da base:")
-                            rospy.loginfo(base_pos_x)
-                            rospy.loginfo(base_pos_y)
-                            for a in range(10):
-                                self.base_publisher.publish(base_pos_x,base_pos_y,0)
-
-                            now = rospy.get_rostime()
-                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                                self.rate.sleep()
-                            self.MAV.arm()
-                            now = rospy.get_rostime()
-                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                                self.rate.sleep()
-                            self.MAV.takeoff()
-                            now = rospy.get_rostime()
-                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                                self.rate.sleep()
-                            print("Ligou trajetoria")
-                            for k in range(40):
-                                self.stop_publisher.publish(0)
-                                self.rate.sleep()
-                            now = rospy.get_rostime()
-                            while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                                self.rate.sleep()'''
                         self.done = 1
                                         
                 elif self.first:

@@ -7,9 +7,12 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from MRS_MAV import MRS_MAV
 from std_msgs.msg import Bool
+from sensor_msgs.msg import Range
+
 
 import time
 MIN_LAR = 1200
+TOL_BASE = 8
 
 class fase1:
     def __init__(self,mav):
@@ -17,15 +20,17 @@ class fase1:
         self.bridge_object = CvBridge()
         self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
         self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
+        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
 
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
-        self.bases_moveis =[]
+        self.bases_moveis_1 =[]
+        self.bases_visitadas = 0        
+        self.bases_moveis_0 = []
         self.encontrou_lar = 0
         self.land = 0
         self.soma = 0
         self.rate = rospy.Rate(60)
-
 
         # Cam Params
         self.image_pixel_width = 752
@@ -34,47 +39,53 @@ class fase1:
     def land_callback(self, data):
         self.land = data.data
 
+    def lidar_callback(self,data):
+        self.lidar_range = data.range
+
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
 
     def tubo(self):
-        self.rows, self.cols, b = self.cv_image.shape
-        self.cv_image_cortada = self.cv_image[0: int(self.rows - (self.rows*0.2)) , int(self.cols*0.2) : self.cols]
-        self.rows, self.cols, b = self.cv_image_cortada.shape
-        self.hsv = cv2.cvtColor(self.cv_image_cortada,cv2.COLOR_BGR2HSV)
-        lowerblaranja = np.array([0, 110, 230])
-        upperblaranja = np.array([26, 160, 255])
-        mask_laranja = cv2.inRange(self.hsv, lowerblaranja, upperblaranja)    
+        if self.encontrou_lar == False:
+            self.rows, self.cols, b = self.cv_image.shape
+            self.cv_image_cortada = self.cv_image[0: int(self.rows - (self.rows*0.2)) , int(self.cols*0.2) : self.cols]
+            self.rows, self.cols, b = self.cv_image_cortada.shape
+            self.hsv = cv2.cvtColor(self.cv_image_cortada,cv2.COLOR_BGR2HSV)
+            lowerblaranja = np.array([0, 110, 230])
+            upperblaranja = np.array([26, 160, 255])
+            mask_laranja = cv2.inRange(self.hsv, lowerblaranja, upperblaranja)    
 
-        soma_lar = 0
-        self.encontrou_lar = False
-        for i in range (self.rows):
-            for j in range (self.cols):
-                if  mask_laranja[i, j] >= 200:
-                    soma_lar += 1
+            soma_lar = 0
+            self.encontrou_lar = False
+            for i in range (self.rows):
+                for j in range (self.cols):
+                    if  mask_laranja[i, j] >= 200:
+                        soma_lar += 1
 
-        if (soma_lar > MIN_LAR):
-            self.soma += 1
+            if (soma_lar > MIN_LAR):
+                self.soma += 1
 
-        if(self.soma > 2):
-            self.encontrou_lar = True
-            rospy.loginfo("TUBO DETECTADO")
-            
-    
-        cv2.imshow('mask_laranja', mask_laranja)
-        cv2.waitKey(0)
+            if(self.soma > 2):
+                self.encontrou_lar = True
+                rospy.loginfo("TUBO DETECTADO")
+                
+        
+            cv2.imshow('mask_laranja', mask_laranja)
+            cv2.waitKey(3)
     
     def scan(self, number):
         if number == 0:
             cord_x = 50
             cord_y = -5
             self.mav.set_position(50, -5, 50, hdg = 0)
+            rospy.loginfo("Iniciando Analise do terreno")
             time.sleep(15)
             hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
         if number == 1:
             cord_x = -45
             cord_y = -5
             self.mav.set_position(-45, -5, 50, hdg = 0)
+            rospy.loginfo("Iniciando Analise do terreno")
             time.sleep(15)
             rows, cols, a = self.cv_image.shape
             cv2.circle(self.cv_image, (int(cols * 62/100),int(rows * 45/100)), 75, (0,255,0), -1)
@@ -96,7 +107,7 @@ class fase1:
             except ZeroDivisionError:
                 continue
             cv2.drawContours(self.cv_image, contours, -1, (0, 255, 0), 3)
-            cv2.imshow('cv_image',self.cv_image)
+            #cv2.imshow('cv_image',self.cv_image)
             cv2.waitKey(15)
             print(cx,cy, np.shape(self.cv_image))
             
@@ -113,35 +124,85 @@ class fase1:
             cord_base_x = cord_x - meters_x
             cord_base_y = cord_y - meters_y
 
-            self.bases_moveis.append([cord_base_x,cord_base_y])
+            if number == 0:
+                self.bases_moveis_0.append([cord_base_x,cord_base_y])
+            elif number == 1:
+                self.bases_moveis_1.append([cord_base_x,cord_base_y])
+
+
             print("Base localizada: " + str(cord_base_x) + " , " + str(cord_base_y))
 
-        cv2.imshow('mask_BaseMovel', mask_BaseMovel)
-        cv2.waitKey(3)
+        '''cv2.imshow('mask_BaseMovel', mask_BaseMovel)
+        cv2.waitKey(3)'''
 
     def trajectory(self):
-        self.scan(0)
-        for base in self.bases_moveis:
+        self.mav.altitude_estimator("BARO")
+        self.scan(1)
+        for base in self.bases_moveis_1:
             x,y = base
             rospy.loginfo("Indo para " + str(x) + " , " + str(y))
-            self.mav.set_position(x,y,8)
-            self.mav.set_position(x,y,-7.5)
-            self.landing()
-        self.mav.set_position(46,9,8)
-        self.mav.set_position(46,9,-8.5)
-        self.landing()
-        self.mav.set_position(46,9,8)
-        self.MAV.set_position(-19,-21,2)
-        self.landing()
-        self.scan(1)
+            self.mav.set_position(x,y,28)
+            self.mav.set_position(x,y,-6)
+            self.landing_control()
+            self.bases_visitadas += 1
+            rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
 
-
-    def landing(self):
+        if (self.mav.controller_data.position.x > -19.5 and self.mav.controller_data.position.y > 21):
+            print("mav.controller_data.position: " + str(self.mav.controller_data.position.x)+ str(self.mav.controller_data.position.y))
+            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28)
+            self.mav.set_position(-53.7, -35.2, 28)
+        rospy.loginfo("Indo para offshore2")
+        self.go_to_fix("offshore2")
+        self.landing()
+        rospy.loginfo("Procurando Tubo...")
+        self.mav.set_position(-50, -36, 4)
         for i in range(40):
-            self.cv_control_publisher.publish(Bool(True))
+            self.tubo()
             self.rate.sleep()
-        while self.land == 0:
-            self.rate.sleep()
+        self.mav.set_position(-50, -21, 4)
+        rospy.loginfo("Indo para offshore1")
+        self.go_to_fix("offshore1")
+        self.landing()
+        rospy.loginfo("Indo para o pier")
+        self.go_to_fix("pier")
+        self.landing()
+
+        if self.bases_visitadas < 6:
+            self.scan(0)
+
+            for base in self.bases_moveis_0:
+                skip = 0
+                x,y = base
+
+                for lista in self.bases_moveis_1:
+                    if abs(lista[0] - x) < TOL_BASE and abs(lista[1] - y) < TOL_BASE:
+                        rospy.loginfo("Ja foi visitada a base " + str(x) + " , " +str(y))
+                        skip = 1
+
+                if skip == 0:
+                    rospy.loginfo("Indo para " + str(x) + " , " + str(y))
+                    self.mav.set_position(x,y,8)
+                    self.mav.set_position(x,y,-7.5)
+                    self.landing_control()
+                    self.bases_visitadas += 1
+                    rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
+        
+        self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9)
+        self.mav.set_position(10,90,9)
+        self.landing()
+
+
+
+
+
+    def landing(self):    
+        self.mav.land()    
+        while self.lidar_range > 0.25:
+            pass
+        self.mav.disarm()
+
+        self.bases_visitadas += 1
+        rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
         now = rospy.get_rostime()
         while not rospy.get_rostime() - now > rospy.Duration(secs=4):
             self.rate.sleep()
@@ -150,7 +211,57 @@ class fase1:
         while not rospy.get_rostime() - now > rospy.Duration(secs=4):
             self.rate.sleep()
         self.mav.takeoff()
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=6):
+            self.rate.sleep()
+        self.mav.altitude_estimator("BARO")
+
+
+    def landing_control(self):
+        for i in range(40):
+            self.cv_control_publisher.publish(Bool(True))
+            self.rate.sleep()
+
+        now = rospy.get_rostime()
+        giveup = 0
+        while self.land == 0 and not giveup:
+            if rospy.get_rostime() - now > rospy.Duration(secs=60):
+                print("Desisto dessa base")
+                giveup = 1
+            self.rate.sleep()
+        self.bases_visitadas += 1
+        if giveup == 0:
+            rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
+            now = rospy.get_rostime()
+            while not rospy.get_rostime() - now > rospy.Duration(secs=6):
+                self.rate.sleep()
+            self.mav.arm()
+            now = rospy.get_rostime()
+            while not rospy.get_rostime() - now > rospy.Duration(secs=6):
+                self.rate.sleep()
+            self.mav.takeoff()
         self.land = 0
+        self.mav.altitude_estimator("BARO")
+
+
+    def go_to_fix(self, base):
+        if base == "pier":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(45, 10, 4)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(45, 10, 0.55)
+
+        if base == "offshore1":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-19.10, -21.1, 4)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-19.10, -21.1, 0.55)
+
+        if base == "offshore2":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-53.7, -35.2, 4)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-53.7, -35.2, 0.55)
 
 
 if __name__ == "__main__":
