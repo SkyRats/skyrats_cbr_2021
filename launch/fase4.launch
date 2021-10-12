@@ -1,30 +1,30 @@
 <launch>
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="cross_node"
     name="cross_node" 
     output="screen"
   />
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="control_qr.py"
     name="control_qr"
     output="screen"
   />
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="MRS_MAV.py"
     name="MRS_MAV"
     output="screen"
   />
     <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="detection_with_ros.py"
     name="qr_detection"
     output="screen"
     />
     <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="qrscript.py"
     name="qr_mission"
     output="screen"

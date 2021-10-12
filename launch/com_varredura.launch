@@ -1,30 +1,30 @@
 <launch>
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="cross_node"
     name="cross_node" 
     output="screen"
   />
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="control.py"
     name="control"
     output="screen"
   />
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="caminho_longo.py"
     name="longo"
     output="screen"
   /> 
   <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="MRS_MAV.py"
     name="MRS_MAV"
     output="screen"
   />
     <node
-    pkg="CBR_2021"
+    pkg="skyrats_cbr_2021"
     type="tubo.py"
     name="pipeline_detector_node"
     output="screen"

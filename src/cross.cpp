@@ -6,7 +6,7 @@ using namespace cv;
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
-#include "CBR_2021/H_info.h"
+#include "skyrats_cbr_2021/H_info.h"
 #include "std_msgs/Bool.h"
 
 #define AREA_THRESH 0.005
@@ -52,7 +52,7 @@ public:
 
 HDetector::HDetector()
 {
-  this->h_pub = this->n.advertise<CBR_2021::H_info>("/precision_landing/detection", 0);
+  this->h_pub = this->n.advertise<skyrats_cbr_2021::H_info>("/precision_landing/detection", 0);
   this->img_debug_pub = this->n.advertise<sensor_msgs::Image>("/precision_landing/debug/image_raw", 0);
   // this->h_sub_image = this->n.subscribe("/uav1/bluefox_optflow/image_raw", 5, &HDetector::image_cb, this);
   this->h_sub_image = this->n.subscribe("/uav1/bluefox_optflow/image_raw", 5, &HDetector::image_cb, this);
@@ -81,7 +81,7 @@ void HDetector::image_cb(const sensor_msgs::ImageConstPtr &img)
       return;
     }
 
-    CBR_2021::H_info msg;
+    skyrats_cbr_2021::H_info msg;
     if (this->detect(cv_ptr->image))
     {
       msg.detected = true;
