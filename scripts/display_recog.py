@@ -260,7 +260,7 @@ class display_cv:
                         # print(type(segROI))
                         total = cv2.countNonZero(segROI)
                         area = (xB - xA) * (yB - yA)
-                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
+                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[int(np.shape(segROI)[0]/2), int(np.shape(segROI)[1]/2)] != 0:
                         # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
                     try:
@@ -541,38 +541,91 @@ class display_cv:
         (x, y, w, h) = cv2.boundingRect(c)
         return x
         
+#class center_display:
+#    def __init__(self, mav, cv):
+#        self.cv = cv
+#        self.mav = mav
+#        self.frame = cv.cam_frame
+#        self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+#    
+#    def display_center(self):
+#        while True:
+#            self.frame = self.cv.cam_frame
+#            self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+#            lowerbpreto = np.array([0, 0, 0])
+#            upperbpreto = np.array([4, 4, 4])
+#            mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
+#            kernel = np.ones((5,5), np.uint8)
+#            #mask_preto = cv2.erode(mask_preto, kernel, iterations=1)
+#            mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
+#            contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#            if len(contours) == 0:
+#                pass
+#            try:
+#                M = cv2.moments(contours[0])
+#            except IndexError:
+#                continue
+#            try: 
+#                cx = int(M['m10']/M['m00'])
+#                cy = int(M['m01']/M['m00'])
+#            except ZeroDivisionError:
+#                continue
+#            cv2.drawContours(self.frame, contours, -1, (0, 255, 0), 3)
+#            cv2.imshow('frame',self.frame)
+#            cv2.waitKey(15)
+#            print(cx,cy, np.shape(self.frame))
+#            return cx, cy
+#    
+#    def centralize(self):
+#        x,y = self.display_center()
+#        while (x > 245 or x < 235) or (y > 381 or y < 371):
+#            x,y = self.display_center()
+#            print(x,y)
+#            if x > 245:
+#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y + 0.12)
+#            if x < 235:
+#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y - 0.12)
+#            if y > 381:
+#                self.mav.set_position(self.mav.controller_data.position.x + 0.12, self.mav.controller_data.position.y)
+#            if y < 371:
+#                self.mav.set_position(self.mav.controller_data.position.x - 0.12, self.mav.controller_data.position.y)
+#        #self.mav.set_position(self.mav.controller_data.position.x - 0.15, self.mav.controller_data.position.y + 0.15)
+
 
 class trajectory:
-    def __init__(self, mavbase, detector):
+    def __init__(self, mavbase, detector): #, center_display
         self.mav = mavbase
         self.detector = detector
+        #self.center = center_display
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
     
     def lidar_callback(self,data):
         self.lidar_range = data.range
     
     def go_to_fix(self, base):
-        if base == "pier":
+        if base == "offshore1":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(45.7, 9.8, 4, hdg= 1.57)
+            self.mav.set_position(-19.10, -21.1, 4, hdg= 1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45.7, 9.8, 0.6)
-        if base == "offshore":
+            self.mav.set_position(-19.10, -21.1, 0.55)
+
+        if base == "offshore2":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-19, -21, 4, hdg= 1.57)
+            self.mav.set_position(-50, -21, 4, hdg=1.57)
+            self.mav.set_position(-53.7, -35.2, 4, hdg=1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-19, -21, 0.6)
-        
+            self.mav.set_position(-53.7, -35.2, 0.55)
+
     def mission_start(self):
         rospy.loginfo("Indo para a base do pier")
-        self.go_to_fix("pier")
+        self.go_to_fix("offshore1")
         #self.detector.main_loop()
 
         rospy.loginfo("Indo para a base offshore")
-        self.go_to_fix("offshore")
+        self.go_to_fix("offshore2")
         #self.detector.main_loop()
 
-        rospy.loginfo("Missão concluida, retornando para a base costeira")
+        rospy.loginfo("Missao concluida, retornando para a base costeira")
         self.mav.altitude_estimator("BARO")
         self.mav.set_position(10, 90, 4, hdg= 1.57)
         self.mav.altitude_estimator("HEIGHT")
@@ -588,7 +641,11 @@ if __name__ == "__main__":
     rospy.init_node("display_recognition")
     mav = MRS_MAV("uav1")
     detector = display_cv()
-    controller = trajectory(mav, detector)
-    controller.mission_start()
-    #controller.go_to_fix("offshore")
-    #detector.main_loop()
+    #center = center_display(mav, detector)
+    #controller = trajectory(mav, detector)
+    #controller.mission_start()
+    #controller.go_to_fix("offshore2")
+    #center.centralize()
+    detector.main_loop()
+    #mav.takeoff()
+    #/uav1/bluefox_optflow/image_raw/
