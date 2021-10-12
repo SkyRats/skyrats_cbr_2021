@@ -11,7 +11,7 @@ DEBUG = False
 DIGITS_LOOKUP = {
             (1, 1, 1, 0, 1, 1, 1): 0,
             # (0, 0, 1, 0, 0, 1, 0): 1,
-            (1, 0, 1, 1, 1, 1, 0): 2,
+            (1, 0, 1, 1, 1, 0, 1): 2,
             (1, 0, 1, 1, 1, 1, 1): 3,
             (1, 0, 1, 1, 0, 1, 1): 3,
             (0, 1, 1, 1, 0, 1, 0): 4,
@@ -96,9 +96,9 @@ class display_cv:
                 cv2.waitKey(30) #pro pc do igor n morrer
             # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
             # cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            # cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = imutils.grab_contours(cnts)
+            # cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            # cnts = imutils.grab_contours(cnts)
             # warped = frame
             
             for c in cnts:
@@ -165,9 +165,9 @@ class display_cv:
         cv2.imshow("digit_recog test", thresh)
         cv2.waitKey(15)
 
-        # cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
+        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = imutils.grab_contours(cnts)
         # cnts = cv2.findContours(image.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         digitCnts = []
 
@@ -338,6 +338,7 @@ class display_cv:
                         if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
                         # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
+                    # print(tuple(on))
                     try:
                         digit = DIGITS_LOOKUP[tuple(on)]
                         Digits.append(str(digit))
@@ -356,7 +357,7 @@ class display_cv:
         
         primeiro_digito = 0
         i = 0
-        print(Digits)
+        # print(Digits)
         try:
             if first_number_digit_count > 0:
                 while i < first_number_digit_count:
@@ -420,10 +421,10 @@ class display_cv:
 
         
         cv2.imshow("teste retangulos", image)
-        if segundo_digito == 101:
-            cv2.waitKey(0)
-        else:
-            cv2.waitKey(15)       
+        # if segundo_digito == 101:
+        #     cv2.waitKey(0)
+        # else:
+        cv2.waitKey(15)       
         return True 
         #Teste de imagem
     
