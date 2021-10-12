@@ -240,7 +240,7 @@ class MRS_MAV:
     def run(self):
         s = 0.5
         while not rospy.is_shutdown():
-            if(self.vel_x != 0 or self.vel_y != 0 or self.vel_z != 0 and self.run == True):
+            if((self.vel_x != 0 or self.vel_y != 0 or self.vel_z != 0) and self.run == True):
                 now = rospy.get_rostime()
                 while not rospy.get_rostime() - now > rospy.Duration(secs=s):
                     self.rate.sleep()
