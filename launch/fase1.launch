@@ -1,0 +1,26 @@
+<launch>
+  <node
+    pkg="CBR_2021"
+    type="cross_node"
+    name="cross_node" 
+    output="screen"
+  />
+  <node
+    pkg="CBR_2021"
+    type="control.py"
+    name="control"
+    output="screen"
+  />
+  <node
+    pkg="CBR_2021"
+    type="fase1.py"
+    name="fase1"
+    output="screen"
+  /> 
+  <node
+    pkg="CBR_2021"
+    type="MRS_MAV.py"
+    name="MRS_MAV"
+    output="screen"
+  />
+</launch> 

@@ -11,7 +11,7 @@ from geometry_msgs.msg import Vector3
 from std_msgs.msg import Bool
 from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
-VEL_CERTO = 0.15
+VEL_CERTO = 0.12
 
 class PrecisionLanding():
     def __init__(self, MAV):
@@ -23,8 +23,7 @@ class PrecisionLanding():
         self.last_time = time.time()
         self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10)
         self.base_publisher = rospy.Publisher("/base_position", Vector3, queue_size=10)
-        self.stop_publisher = rospy.Publisher("/stop_trajectory", Bool, queue_size=10)
-        self.last_land_sub = rospy.Subscriber("/precision_land/last_land", Bool, self.last_land_callback)
+        self.land_pub = rospy.Publisher("/precision_land/land", Bool, queue_size=10)
 
         # Cam Params
         self.image_pixel_width = 752
@@ -34,18 +33,17 @@ class PrecisionLanding():
         self.delay = 0
         self.is_lost = True
         self.first_lost = 0
-        self.last_land = 0
         self.flag = 0
         self.done = 0
         self.first = True
         self.velocity = Vector3()
         self.first_detection = 0
         talz = 15 #segundos
-        kpz = 0.7
+        kpz = 0.6
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
         self.pid_x = PID(-0.005, 0, -0)
-        self.pid_y = PID(0.005, 0, 0)
+        self.pid_y = PID(0.006, 0, 0)
         # Negative parameters (CV's -y -> Frame's +z)
         self.pid_z = PID(-kpz, -kpz/talz, 0)
         self.pid_w = PID(0, 0, 0)  # Orientation
@@ -59,9 +57,6 @@ class PrecisionLanding():
         self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
         self.pid_z.output_limits = (-1, 1)
 
-
-    def last_land_callback(self, data):
-        self.last_land = data.data
 
     def detection_callback(self, vector_data):
         # Dados enviados pelo H.cpp -> Centro do H e Proximidade do H (Area ratio)
@@ -85,18 +80,13 @@ class PrecisionLanding():
                         self.is_lost = 1
                 
                 if not self.is_lost and self.first_detection == 1:
-                    if self.detection.area_ratio < 0.12:  # Drone ainda esta longe do H
+                    if self.detection.area_ratio < 0.42:  # Drone ainda esta longe do H
                         if(flag == 0):
-                            self.MAV.set_position(0.1,0,0,0,relative_to_drone=True)
                             rospy.loginfo("Controle PID")
-                            for d in range(60):
-                                self.stop_publisher.publish(1)
-                                self.rate.sleep()
                             flag = 1
                         
                         self.velocity.x= self.pid_x(-self.detection.center_y)
                         self.velocity.y = self.pid_y(self.detection.center_x)
-                        # PID z must have negative parameters
                         if(abs(self.velocity.x) < VEL_CERTO and abs(self.velocity.y) < VEL_CERTO):
                             self.velocity.z = self.pid_z(self.detection.area_ratio)
                         else:
@@ -114,21 +104,18 @@ class PrecisionLanding():
                         if (flag == 1):
                             rospy.loginfo("Cruz encontrada!")
                             rospy.logwarn("Descendo...")
-
                         flag = 0
                         # Caso o drone esteja suficientemente perto do H
                         
-                        self.MAV.set_position(0,-0.2 ,0,relative_to_drone=True)
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                            self.rate.sleep()
-                        self.MAV.land()
-                        now = rospy.get_rostime()
-                        while not rospy.get_rostime() - now > rospy.Duration(secs=4):
-                            self.rate.sleep()
-                        self.MAV.disarm()
+                        #self.MAV.set_position(0,-0.2 ,0,relative_to_drone=True)
 
-                        if(self.last_land == 0):
+                        self.MAV.land()
+                        self.MAV.disarm()
+                        for i in range(40):
+                            self.land_pub.publish(Bool(True))
+                            self.rate.sleep()
+
+                        '''if(self.last_land == 0):
                             base_pos_x = self.MAV.controller_data.position.x
                             base_pos_y = self.MAV.controller_data.position.y
 
@@ -155,11 +142,8 @@ class PrecisionLanding():
                                 self.rate.sleep()
                             now = rospy.get_rostime()
                             while not rospy.get_rostime() - now > rospy.Duration(secs=2):
-                                self.rate.sleep()
-                            self.done = 1
-                        
-                        else:
-                            self.done = 2
+                                self.rate.sleep()'''
+                        self.done = 1
                                         
                 elif self.first:
                     rospy.loginfo("Iniciando...")
@@ -178,10 +162,6 @@ class PrecisionLanding():
                     flag = 0
                     if self.first_lost == 1:
                         if rospy.get_rostime() - lost > rospy.Duration(secs=5):
-                            print("Ligou trajetoria")       
-                            for k in range(40):
-                                self.stop_publisher.publish(0)
-                                self.rate.sleep() 
                             self.first_lost = 0
 
 

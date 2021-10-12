@@ -255,9 +255,9 @@ if __name__ == '__main__':
     #mav.disarm()
     #mav.arm()
     #mav.takeoff()
-    #mav.set_position(0, 0, -2, 0, relative_to_drone=True) # 55, -18, 50    -50, -18, 50
+    #mav.set_position(0, 0, 25, 0, relative_to_drone=True) # 55, -18, 50    -50, -18, 50
     #mav.gripper("down")
-    #mav.set_position(-54, -35, 10) # 55, -18, 50    -50, -18, 50
+    #mav.set_position(30, -17, 0,0) # 55, -18, 50    -50, -18, 50
     #mav.altitude_estimator("HEIGHT")
     mav.run()
     #mav.RTL()

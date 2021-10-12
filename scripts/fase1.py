@@ -1,20 +1,28 @@
+#!/usr/bin/env python3
+
 import cv2
 import numpy as np
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from MRS_MAV import MRS_MAV
+from std_msgs.msg import Bool
+
 import time
 MIN_LAR = 1200
 
-class boat_scanner:
+class fase1:
     def __init__(self,mav):
         self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback)
         self.bridge_object = CvBridge()
+        self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
+        self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
+
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
         self.bases_moveis =[]
         self.encontrou_lar = 0
+        self.land = 0
         self.soma = 0
         self.rate = rospy.Rate(60)
 
@@ -23,7 +31,9 @@ class boat_scanner:
         self.image_pixel_width = 752
         self.image_pixel_height = 480
 
-    
+    def land_callback(self, data):
+        self.land = data.data
+
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
 
@@ -90,7 +100,7 @@ class boat_scanner:
             cv2.waitKey(15)
             print(cx,cy, np.shape(self.cv_image))
             
-            one_pixel_in_meters = 0.275     #0.224691382978
+            one_pixel_in_meters = 0.28     #0.224691382978
             image_center_x = self.image_pixel_width/2
             image_center_y = self.image_pixel_height/2
 
@@ -109,10 +119,42 @@ class boat_scanner:
         cv2.imshow('mask_BaseMovel', mask_BaseMovel)
         cv2.waitKey(3)
 
+    def trajectory(self):
+        self.scan(0)
+        for base in self.bases_moveis:
+            x,y = base
+            rospy.loginfo("Indo para " + str(x) + " , " + str(y))
+            self.mav.set_position(x,y,8)
+            self.mav.set_position(x,y,-7.5)
+            self.landing()
+        self.mav.set_position(46,9,8)
+        self.mav.set_position(46,9,-8.5)
+        self.landing()
+        self.mav.set_position(46,9,8)
+        self.MAV.set_position(-19,-21,2)
+        self.landing()
+        self.scan(1)
+
+
+    def landing(self):
+        for i in range(40):
+            self.cv_control_publisher.publish(Bool(True))
+            self.rate.sleep()
+        while self.land == 0:
+            self.rate.sleep()
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=4):
+            self.rate.sleep()
+        self.mav.arm()
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=4):
+            self.rate.sleep()
+        self.mav.takeoff()
+        self.land = 0
+
+
 if __name__ == "__main__":
-    rospy.init_node("boat_scanner")
+    rospy.init_node("fase1")
     mav = MRS_MAV("uav1")
-    scanner = boat_scanner(mav)
-    #scanner.scan(0)
-    scanner.scan(1)
-    scanner.tubo()
+    missao = fase1(mav)
+    missao.trajectory()
