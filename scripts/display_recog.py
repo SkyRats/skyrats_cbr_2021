@@ -403,7 +403,7 @@ class display_cv:
         #     except ValueError:
         #         print("second number's digit value error (else)")
         #         return False
-        print(primeiro_digito)
+        print(primeiro_digito, end="%\n")
 
         if primeiro_digito > 55 or primeiro_digito < 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
@@ -414,7 +414,7 @@ class display_cv:
         # print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
         time.sleep(35)
 
-        print(segundo_digito)
+        print(segundo_digito, end="%\n")
         if segundo_digito > 5 or segundo_digito <= -5:
             print('\033[1;37;41m AJUSTE DE ZERO FORA DE CONFORMIDADE \033[0;0m')
             # print('\a')
