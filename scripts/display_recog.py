@@ -4,13 +4,15 @@ from imutils import contours
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image
-from MRS_MAV import MRS_MAV
+import imutils
+# from MRS_MAV import MRS_MAV
 
 DEBUG = False
 DIGITS_LOOKUP = {
             (1, 1, 1, 0, 1, 1, 1): 0,
             (0, 0, 1, 0, 0, 1, 0): 1,
             (1, 0, 1, 1, 1, 1, 0): 2,
+            (1, 0, 1, 1, 1, 1, 1): 3,
             (1, 0, 1, 1, 0, 1, 1): 3,
             (0, 1, 1, 1, 0, 1, 0): 4,
             (1, 1, 0, 1, 0, 1, 1): 5,
@@ -93,7 +95,9 @@ class display_cv:
                 print(np.shape(thresh))
                 cv2.waitKey(30) #pro pc do igor n morrer
             # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            cnts = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            # cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            cnts = imutils.grab_contours(cnts)
             # warped = frame
             
             for c in cnts:
@@ -158,9 +162,11 @@ class display_cv:
         # thresh = cv2.dilate(thresh,kernel,iterations = 3)
         thresh = cv2.dilate(thresh,kernel,iterations = 2)
         cv2.imshow("digit_recog test", thresh)
-               
+        cv2.waitKey(15)
 
-        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
         # cnts = cv2.findContours(image.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         digitCnts = []
 
@@ -178,8 +184,8 @@ class display_cv:
             # print(x, y, h, w)
             #print(np.shape(image)[0], np.shape(image)[1])
             # print(float((h*w))/float((np.shape(image)[0]*np.shape(image)[1]))) ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)
-            if (((h)/(w) <= 8 and (h)/(w) >= 3 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.02) or 
-            (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.06) or 
+            if ((h/w <= 8 and (h)/(w) >= 3 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.019) or 
+            (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.06) or 
             (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             # if (((h)/(w) <= 0.7 and (h)/(w) >= 0.35) or ((h)/(w) >= 1.5 and (h)/(w) <= 2.5)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
             #if((w<=(np.shape(image)[1])/23 and h<=(np.shape(image)[0])*(15/46)) or (w<=(np.shape(image)[1])*(7/46) and h<=(np.shape(image)[0])*(7/92)) or ((w<=np.shape(image)[1]*(19/92) and w>=(np.shape(image)[1])*(15/92)) and (h<=(np.shape(image)[0])*(17/46) and h>=(np.shape(image)[0])*(31/92)))):
@@ -188,7 +194,7 @@ class display_cv:
                     # print(x, y, h, w)
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
                     digitCnts.append(c)
-            #cv2.imshow("teste_02", image)
+            cv2.imshow("teste_02", image)
             #cv2.waitKey(0)
 
         digitCnts.sort(reverse=True, key=self.sorter)
@@ -197,16 +203,16 @@ class display_cv:
 
         for c in digitCnts:
             (x, y, w, h) = cv2.boundingRect(c)
-            if y<np.shape(image)[0]/2:
+            if y + 15 < (np.shape(image)[0])/2:
                 linha1.append(c)
             else:
                 linha2.append(c)
-
+        
         if len(linha1) > 0 and len(linha2) > 0:
             contours.sort_contours(linha1)
             contours.sort_contours(linha2)
         else:
-            # print("No contours")
+            print("No contours")
             return False
 
 
@@ -218,16 +224,16 @@ class display_cv:
             if first_number_digit_count < 2:
                 (x, y, w, h) = cv2.boundingRect(c)
                 roi = thresh[y:y+h, x:x+w]
-                # roi = image[y:y+h, x:x+w]
+                # roi = gray[y:y+h, x:x+w]
                 (roiH, roiW) = roi.shape
                 # if (((h)/(w) <= 8 and (h)/(w) >= 2)):
                 if ((h)/(w) <= 8 and (h)/(w) >= 3):
                 # if (not (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2)):
                 # if ((h/w) >= 4 and (w/h)>=0.06):
                 #if (roiW<=(np.shape(image)[1])/23 and roiH<=(np.shape(image)[0])*(15/46)): #digit one
-                    segROI = roi[y:h, x:w]
+                    segROI = roi[0:h, 0:w]
                     total = cv2.countNonZero(segROI)
-                    area = (h - x) * (h - y)
+                    area = (h) * (w)
                     if float(area) > 0 and total/float(area) > 0.5:
                         Digits.append("1")
                         first_number_digit_count += 1
@@ -235,7 +241,7 @@ class display_cv:
                         cv2.putText(image,"1", (x - 10, y + 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
+                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -250,12 +256,18 @@ class display_cv:
                     on = [0] * len(segments)
                     for (i, ((xA, yA), (xB, yB))) in enumerate(segments):
                         segROI = roi[yA:yB, xA:xB]
+                        # cv2.imshow("segROI", segROI)
+                        # cv2.waitKey(15)
+                        # print(type(segROI))
                         total = cv2.countNonZero(segROI)
                         area = (xB - xA) * (yB - yA)
-                        if float(area) > 0 and total / float(area) > 0.5:
+                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
+                        # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
                     try:
                         digit = DIGITS_LOOKUP[tuple(on)]
+                        if(digit == 8 and float(h)/float(w) > 2.2):
+                            digit = 3
                         Digits.append(str(digit))
                         first_number_digit_count += 1
                         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
@@ -264,6 +276,7 @@ class display_cv:
                         # print("first number error")
                         continue
                         # return False
+
                 
         for c in linha2:
             if second_number_digit_count < 3:
@@ -275,9 +288,9 @@ class display_cv:
                 # w do menos = h/2 do um
                 if (float(h)/float(w) <= 0.75 and float(h)/float(w) >= 0.1):
                 # if ((w/h) >= 2 and (h/w)>=0.12): #-
-                    segROI = roi[y:h, x:w]
+                    segROI = roi[0:h, 0:w]
                     total = cv2.countNonZero(segROI)
-                    area = (h - x) * (h - y)
+                    area = (h) * (w)
                     if float(area) > 0 and total/float(area) > 0.5:
                         Digits.append("-")
                         second_number_digit_count += 1
@@ -288,17 +301,17 @@ class display_cv:
                 # elif (((h)/(w) <= 8 and (h)/(w) >= 2)):
                 elif ((h)/(w) <= 8 and (h)/(w) >= 3):
                 # elif ((h/w) >= 4 and (w/h)>=0.06): #digit one
-                    segROI = roi[y:h, x:w]
+                    segROI = roi[0:h, 0:w]
                     total = cv2.countNonZero(segROI)
-                    area = (h - x) * (h - y)
+                    area = (h) * (w)
                     if float(area) > 0 and total/float(area) > 0.5:
                         Digits.append("1")
-                        first_number_digit_count += 1
+                        second_number_digit_count += 1
                         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
                         cv2.putText(image,"1", (x - 10, y + 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
                     continue
-                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.2): #any other digit
+                elif (float(h)/float(w) >= 1.8 and float(h)/float(w) <= 2.8): #any other digit
                     (dW, dH) = (int(roiW * 0.25), int(roiH * 0.15))
                     dHC = int(roiH * 0.05)
                     segments = [
@@ -313,9 +326,13 @@ class display_cv:
                     on = [0] * len(segments)
                     for (i, ((xA, yA), (xB, yB))) in enumerate(segments):
                         segROI = roi[yA:yB, xA:xB]
+                        # cv2.imshow("segROI", segROI)
+                        # cv2.waitKey(15)
+                        # print(type(segROI))
                         total = cv2.countNonZero(segROI)
                         area = (xB - xA) * (yB - yA)
-                        if float(area) > 0 and total / float(area) > 0.5:
+                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
+                        # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
                     try:
                         digit = DIGITS_LOOKUP[tuple(on)]
@@ -333,7 +350,6 @@ class display_cv:
         #     # print("first number's digit error")
         #     return False
         
-
         primeiro_digito = 0
         i = 0
         try:
@@ -355,7 +371,7 @@ class display_cv:
                     i += 1
                 segundo_digito = int(''.join(segundo_digito))
         except ValueError:
-            # print("error when joining digits")
+            print("error when joining digits")
             return False
 
         # segundo_digito = ''
@@ -399,7 +415,10 @@ class display_cv:
 
         
         cv2.imshow("teste retangulos", image)
-        cv2.waitKey(15)       
+        if segundo_digito == 1:
+            cv2.waitKey(0)
+        else:
+            cv2.waitKey(15)       
         return True 
         #Teste de imagem
     
