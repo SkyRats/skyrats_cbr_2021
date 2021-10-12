@@ -26,7 +26,10 @@ class PrecisionLanding():
         self.last_time = time.time()
         self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10) 
         self.give_up_publisher = rospy.Publisher("/precision_landing/giveup", Bool, queue_size=10)
+        self.qr_running = rospy.Subscriber("/qrdetection/set_running_state", Bool, self.qr_running_callback)
+
         #self.last_land_sub = rospy.Subscriber("/precision_land/last_land", Bool, self.last_land_callback)
+        self.running_pub = rospy.Publisher("/qrdetection/set_running_state", Bool, queue_size=10)  # sends data that tells when to start and stop detection
 
         # Cam Params
         self.image_pixel_width = 752
@@ -42,7 +45,7 @@ class PrecisionLanding():
         self.velocity = Vector3()
         self.first_detection = 0
         talz = 15 #segundos
-        kpz = 0.7
+        kpz = 0.5
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
         self.pid_x = PID(-0.005, 0, -0)
@@ -71,6 +74,8 @@ class PrecisionLanding():
 
         self.last_time = time.time()
         self.first_detection = 1'''
+    def qr_running_callback(self, data):
+        self.qr = data.data
 
     def done_callback(self, data):
         self.done = data.data
@@ -98,44 +103,40 @@ class PrecisionLanding():
                         self.is_lost = 1
                 
                 if not self.is_lost and self.first_detection == 1:
-                    if self.detection.area_ratio < 0.5:  # Drone ainda esta longe do H
-                        if(flag == 0):
-                            rospy.loginfo("Controle PID")
-                            flag = 1
-                        
-                        self.velocity.x= self.pid_x(-self.detection.center_y)
-                        self.velocity.y = self.pid_y(self.detection.center_x)
-                        # PID z must have negative parameters
-                        if(abs(self.velocity.x) < VEL_CERTO and abs(self.velocity.y) < VEL_CERTO):
-                            self.velocity.z = self.pid_z(self.detection.area_ratio)
-                        else:
-                            self.velocity.z = 0
+                    if self.done == 0:
+                        if self.detection.area_ratio < 0.8:  # Drone ainda esta longe do H
+                            if(flag == 0):
+                                flag = 1
+                            
+                            if(self.detection.area_ratio > 0.45):
+                                for i in range(20):
+                                    self.running_pub.publish(Bool(True))
+                                    self.rate.sleep
 
-                        print("vel_x = " + str(self.velocity.x))
-                        print("vel_y = " + str(self.velocity.y))
-                        print("vel_z = " + str(self.velocity.z))
-                      
-                        for b in range(40):
-                            self.vel_publisher.publish(self.velocity)
-                            self.rate.sleep()
+                            self.velocity.x= self.pid_x(-self.detection.center_y)
+                            self.velocity.y = self.pid_y(self.detection.center_x)
+                            # PID z must have negative parameters
+                            if(abs(self.velocity.x) < VEL_CERTO and abs(self.velocity.y) < VEL_CERTO):
+                                self.velocity.z = self.pid_z(self.detection.area_ratio)
+                            else:
+                                self.velocity.z = 0
+                        
+                            for b in range(30):
+                                self.vel_publisher.publish(self.velocity)
+                                self.rate.sleep()
 
                     else:
                         self.velocity.x = self.velocity.y = self.velocity.z = 0
                         for j in range(40):
                             self.vel_publisher.publish(self.velocity)
                             self.rate.sleep()
-                        if (flag == 1):
-                            rospy.loginfo("Cruz encontrada!")
-                            rospy.logwarn("Descendo...")
-
-                        flag = 0
                     
 
                 elif self.first:
                     rospy.loginfo("Iniciando...")
                     self.first = False
 
-                elif self.done != 1:  # Drone perdeu o H 
+                elif self.done != 1 :  # Drone perdeu o H 
                     if flag == 1:        
                         lost = rospy.get_rostime()
                         self.first_lost = 1
@@ -153,8 +154,14 @@ class PrecisionLanding():
                                 self.give_up_publisher.publish(1)
                                 self.rate.sleep() 
                             self.first_lost = 0
-
-
+                    
+                    if self.qr_running:
+                        lost = rospy.get_rostime()
+                        if rospy.get_rostime() - lost > rospy.Duration(secs=10):
+                            print("Desisto dessa base")       
+                        for k in range(40):
+                            self.give_up_publisher.publish(1)
+                            self.rate.sleep() 
 
                 self.rate.sleep()
 

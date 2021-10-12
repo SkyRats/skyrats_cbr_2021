@@ -40,6 +40,7 @@ class QRDetection():
         self.running_state = bool.data
 
     def detect(self):
+        barcode_antigo = None
         rospy.loginfo("Starting QR Detection")
         while not rospy.is_shutdown():
             if self.running_state:
@@ -48,7 +49,6 @@ class QRDetection():
                 img_bw = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY)[1] #thresh = 40
 
                 qr_result = decode(img_bw)
-                cv2.imwrite("PrimeiraImagemTratada.jpeg", self.cam_frame)
                 for barcode in qr_result:
                     for i in range(10):
                         self.detection_pub.publish(Bool(True))
@@ -60,11 +60,15 @@ class QRDetection():
                     # on our output image we need to convert it to a string first
                     barcodeData = barcode.data.decode("utf-8")
                     barcodeType = barcode.type
+                    if(barcodeData != barcode_antigo):
+                        barcode_antigo = barcodeData
+                        flag = 0
                     for i in range(10):
                         self.data_pub.publish(String(barcodeData))
-
-                    rospy.loginfo("Type: " + str(barcodeType))
-                    rospy.loginfo("Data: " + str(barcodeData))
+                    if(flag == 0):
+                        #rospy.loginfo("Type: " + str(barcodeType))
+                        rospy.loginfo("QRCODE: " + str(barcodeData))
+                        flag = 1
                     self.rate.sleep()
             else:
                 for i in range(10):

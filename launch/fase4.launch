@@ -29,5 +29,4 @@
     name="qr_mission"
     output="screen"
     />
-  <include file="$(find controller_g)/launch/ControllerG.launch" />
 </launch> 
