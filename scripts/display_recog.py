@@ -5,6 +5,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image, Range
 from MRS_MAV import MRS_MAV
+import time
 # import imutils
 
 DEBUG = False
@@ -122,7 +123,7 @@ class display_cv:
                                 #cv2.waitKey(15)
                                 #cv2.waitKey(0)
                                 if self.digit_recog(warped) == True:
-                                    break
+                                    return
                             else:
                                 i += 1
                                 #cv2.rectangle(frame, (x2, y2), (x2 + w2, y2 + h2), (0,255,0))
@@ -335,7 +336,7 @@ class display_cv:
                         # print(type(segROI))
                         total = cv2.countNonZero(segROI)
                         area = (xB - xA) * (yB - yA)
-                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[np.shape(segROI)[0]/2, np.shape(segROI)[1]/2] != 0:
+                        if float(area) > 0 and (total / float(area) > 0.50) and segROI[int(np.shape(segROI)[0]/2), int(np.shape(segROI)[1]/2)] != 0:
                         # if segROI[(yB - yA)/2, (xB - xA)/2]:
                             on[i]= 1
                     # print(tuple(on))
@@ -379,7 +380,7 @@ class display_cv:
         except ValueError:
             print("error when joining digits")
             return False
-
+        print("MOSTRADOR DETECTADO")
         # segundo_digito = ''
         # if Digits[2] == "-":
         #     i = -1
@@ -402,8 +403,7 @@ class display_cv:
         #     except ValueError:
         #         print("second number's digit value error (else)")
         #         return False
-        
-        print(primeiro_digito, segundo_digito)
+        print(primeiro_digito)
 
         if primeiro_digito > 55 or primeiro_digito < 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
@@ -412,7 +412,9 @@ class display_cv:
             print('\033[1;37;42m PERCENTUAL DE GAS DENTRO DOS CONFORMES \033[0;0m')
 
         # print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
+        #time.sleep(35)
 
+        print(segundo_digito)
         if segundo_digito > 5 or segundo_digito <= -5:
             print('\033[1;37;41m AJUSTE DE ZERO FORA DE CONFORMIDADE \033[0;0m')
             # print('\a')
@@ -628,13 +630,15 @@ class trajectory:
             self.mav.set_position(-53.7, -35.2, 0.55)
 
     def mission_start(self):
-        rospy.loginfo("Indo para a base do pier")
+        rospy.loginfo("Indo para a primeira base do offshore")
         self.go_to_fix("offshore1")
-        #self.detector.main_loop()
+        time.sleep(5)
+        self.detector.main_loop()
 
-        rospy.loginfo("Indo para a base offshore")
+        rospy.loginfo("Indo para a segunda base do offshore")
         self.go_to_fix("offshore2")
-        #self.detector.main_loop()
+        time.sleep(5)
+        self.detector.main_loop()
 
         rospy.loginfo("Missao concluida, retornando para a base costeira")
         self.mav.altitude_estimator("BARO")
@@ -653,10 +657,5 @@ if __name__ == "__main__":
     mav = MRS_MAV("uav1")
     detector = display_cv()
     #center = center_display(mav, detector)
-    #controller = trajectory(mav, detector)
-    #controller.mission_start()
-    #controller.go_to_fix("offshore2")
-    #center.centralize()
-    detector.main_loop()
-    #mav.takeoff()
-    #/uav1/bluefox_optflow/image_raw/
+    controller = trajectory(mav, detector)
+    controller.mission_start()
