@@ -4,8 +4,8 @@ from imutils import contours
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image, Range
-# from MRS_MAV import MRS_MAV
-import imutils
+from MRS_MAV import MRS_MAV
+# import imutils
 
 DEBUG = False
 DIGITS_LOOKUP = {
@@ -650,7 +650,7 @@ class trajectory:
 
 if __name__ == "__main__":
     rospy.init_node("display_recognition")
-    # mav = MRS_MAV("uav1")
+    mav = MRS_MAV("uav1")
     detector = display_cv()
     #center = center_display(mav, detector)
     #controller = trajectory(mav, detector)
