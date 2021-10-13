@@ -30,7 +30,7 @@ class PrecisionLanding():
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
         self.giveup_sub = rospy.Subscriber("/precision_landing/giveup", Bool, self.giveup_callback)
         self.achou_pub = rospy.Publisher("/precision_landing/achou", Bool, queue_size=10)
-
+        self.cv_control_publisher = rospy.Subscriber("/precision_landing/set_running_state", Bool, self.runnin_callback)
 
         # Cam Params
         self.image_pixel_width = 752
@@ -45,6 +45,7 @@ class PrecisionLanding():
         self.done = 0
         self.first = True
         self.velocity = Vector3()
+        self.running = 0
         self.first_detection = 0
         talz = 15 #segundos
         kpz = 1
@@ -64,6 +65,9 @@ class PrecisionLanding():
         # Limitacao da saida
         self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
         self.pid_z.output_limits = (-1.5, 1.5)
+
+    def runnin_callback(self,data):
+        self.running =data.data
 
     def giveup_callback(self,data):
         self.giveup = data.data
@@ -123,7 +127,7 @@ class PrecisionLanding():
                     while not rospy.get_rostime() - now > rospy.Duration(secs=1):
                         self.rate.sleep()
                     #self.MAV.altitude_estimator("HEIGHT")
-                    #self.MAV.set_position(self.MAV.controller_data.position.x,self.MAV.controller_data.position.y,0.8)
+                    self.MAV.set_position(0.2, 0,0,0, relative_to_drone=True)
                     self.MAV.land()
                     while self.lidar_range > 0.25:
                         pass
@@ -131,6 +135,8 @@ class PrecisionLanding():
                     for i in range(40):
                         self.land_pub.publish(Bool(True))
                         self.rate.sleep()
+            elif self.running == 1:
+                self.MAV.set_position(0.1,0,0,0,relative_to_drone=True)
 
             self.rate.sleep()
 
