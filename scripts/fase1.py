@@ -146,30 +146,30 @@ class fase1:
         self.mav.altitude_estimator("BARO")
         self.scan(1)
         for base in self.bases_moveis_1:
-            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28)
+            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
             x,y = base
             rospy.loginfo("Indo para " + str(x) + " , " + str(y))
             for i in range(40):
                 self.giveup_publisher.publish(Bool(False))
                 self.rate.sleep()
-            self.mav.set_position(x,y,28)
-            self.mav.set_position(x,y,-6)
+            self.mav.set_position(x,y,28,1.57)
+            self.mav.set_position(x,y,-6,1.57)
             self.landing_control()
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
 
         if (self.mav.controller_data.position.x > -19.5 and self.mav.controller_data.position.y > 21):
             print("mav.controller_data.position: " + str(self.mav.controller_data.position.x)+ str(self.mav.controller_data.position.y))
-            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28)
-            self.mav.set_position(-53.7, -35.2, 28)
+            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
+            self.mav.set_position(-53.7, -35.2, 28,1.57)
         rospy.loginfo("Indo para offshore2")
         self.go_to_fix("offshore2")
         self.landing()
         rospy.loginfo("Procurando Tubo...")
-        self.mav.set_position(-50, -36, 4)
+        self.mav.set_position(-50, -36, 4,1.57)
         for i in range(40):
             self.tubo()
             self.rate.sleep()
-        self.mav.set_position(-50, -21, 4)
+        self.mav.set_position(-50, -21, 4,1.57)
         rospy.loginfo("Indo para offshore1")
         self.go_to_fix("offshore1")
         self.landing()
@@ -194,18 +194,15 @@ class fase1:
                     for i in range(40):
                         self.giveup_publisher.publish(Bool(False))
                         self.rate.sleep()
-                    self.mav.set_position(x,y,8)
-                    self.mav.set_position(x,y,-7.5)
+                    self.mav.set_position(x,y,8,1.57)
+                    self.mav.set_position(x,y,-7.5,1.57)
                     self.landing_control()
                     self.bases_visitadas += 1
                     rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
         
-        self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9)
-        self.mav.set_position(10,90,9)
+        self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9,1.57)
+        self.mav.set_position(10,90,9,1.57)
         self.landing()
-
-
-
 
 
     def landing(self):    
@@ -266,21 +263,21 @@ class fase1:
     def go_to_fix(self, base):
         if base == "pier":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(45, 10, 4)
+            self.mav.set_position(45, 10, 4,1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45, 10, 0.55)
+            self.mav.set_position(45, 10, 0.55,1.57)
 
         if base == "offshore1":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-19.10, -21.1, 4)
+            self.mav.set_position(-19.10, -21.1, 4,1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-19.10, -21.1, 0.55)
+            self.mav.set_position(-19.10, -21.1, 0.55,1.57)
 
         if base == "offshore2":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-53.7, -35.2, 4)
+            self.mav.set_position(-53.7, -35.2, 4,1.57)
             self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-53.7, -35.2, 0.55)
+            self.mav.set_position(-53.7, -35.2, 0.55,1.57)
 
 
 if __name__ == "__main__":
