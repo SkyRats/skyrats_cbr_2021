@@ -155,7 +155,6 @@ class fase1:
             self.mav.set_position(x,y,28)
             self.mav.set_position(x,y,-6)
             self.landing_control()
-            self.bases_visitadas += 1
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
 
         if (self.mav.controller_data.position.x > -19.5 and self.mav.controller_data.position.y > 21):
@@ -225,6 +224,7 @@ class fase1:
 
 
     def landing_control(self):
+        self.time(1)
         for i in range(40):
             self.cv_control_publisher.publish(Bool(True))
             self.rate.sleep()

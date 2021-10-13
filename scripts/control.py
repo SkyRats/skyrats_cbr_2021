@@ -88,56 +88,52 @@ class PrecisionLanding():
             if self.first_detection == 1:
                 if self.detection.center_x == -1:
                     self.is_lost = 1
-            
-            if not self.is_lost and self.first_detection == 1 and self.giveup == 0:
-                if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
-                    if(self.flag == 0):
-                        rospy.loginfo("Controle PID")
-                        self.flag = 1
-                    
-                    self.velocity.x= self.pid_x(-self.detection.center_y)
-                    self.velocity.y = self.pid_y(self.detection.center_x)
-                    if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
-                        self.velocity.z = self.pid_z(self.detection.area_ratio)
-                    else:
-                        self.velocity.z = 0
+            if self.first_detection == 1 and self.giveup == 0:
+                if not self.is_lost :
+                    if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
+                        if(self.flag == 0):
+                            rospy.loginfo("Controle PID")
+                            self.flag = 1
+                        
+                        self.velocity.x= self.pid_x(-self.detection.center_y)
+                        self.velocity.y = self.pid_y(self.detection.center_x)
+                        if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
+                            self.velocity.z = self.pid_z(self.detection.area_ratio)
+                        else:
+                            self.velocity.z = 0
 
-                    print("Vel_x = " + str(self.velocity.x))
-                    print("Vel_y = " + str(self.velocity.y))
-                    print("Vel_z = " + str(self.velocity.z))
-
-                    for b in range(10):
-                        self.vel_publisher.publish(self.velocity)
-                        self.rate.sleep()
-
-                else:
-                    self.velocity.x = self.velocity.y = self.velocity.z = 0
-                    for j in range(20):
-                        self.vel_publisher.publish(self.velocity)
-                        self.rate.sleep()
-                    if (self.flag == 1):
-                        rospy.loginfo("Cruz encontrada!")
-                        rospy.logwarn("Descendo...")
-                        for i in range(40):
-                            self.achou_pub.publish(Bool(True))
+                        for b in range(10):
+                            self.vel_publisher.publish(self.velocity)
                             self.rate.sleep()
-                        self.flag = 0
-                    
-                    now = rospy.get_rostime()
-                    while not rospy.get_rostime() - now > rospy.Duration(secs=1):
-                        self.rate.sleep()
-                    #self.MAV.altitude_estimator("HEIGHT")
-                    self.MAV.set_position(0.2, 0,0,0, relative_to_drone=True)
-                    self.MAV.land()
-                    while self.lidar_range > 0.25:
-                        pass
-                    self.MAV.disarm()
-                    for i in range(40):
-                        self.land_pub.publish(Bool(True))
-                        self.rate.sleep()
-            elif self.running == 1:
-                self.MAV.set_position(0.15,0,0,0,relative_to_drone=True)
-                print("de ladin")
+
+                    else:
+                        self.velocity.x = self.velocity.y = self.velocity.z = 0
+                        for j in range(20):
+                            self.vel_publisher.publish(self.velocity)
+                            self.rate.sleep()
+                        if (self.flag == 1):
+                            rospy.loginfo("Cruz encontrada!")
+                            rospy.logwarn("Descendo...")
+                            for i in range(40):
+                                self.achou_pub.publish(Bool(True))
+                                self.rate.sleep()
+                            self.flag = 0
+                        
+                        now = rospy.get_rostime()
+                        while not rospy.get_rostime() - now > rospy.Duration(secs=1):
+                            self.rate.sleep()
+                        #self.MAV.altitude_estimator("HEIGHT")
+                        self.MAV.set_position(0.2, 0,0,0, relative_to_drone=True)
+                        self.MAV.land()
+                        while self.lidar_range > 0.25:
+                            pass
+                        self.MAV.disarm()
+                        for i in range(40):
+                            self.land_pub.publish(Bool(True))
+                            self.rate.sleep()
+                elif self.running == 1:
+                    self.MAV.set_position(0.15,0,0,0,relative_to_drone=True)
+                    print("de ladin")
 
             self.rate.sleep()
 
