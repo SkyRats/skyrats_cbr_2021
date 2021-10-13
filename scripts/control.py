@@ -88,9 +88,11 @@ class PrecisionLanding():
             if self.first_detection == 1:
                 if self.detection.center_x == -1:
                     self.is_lost = 1
+            if self.running == 0:
+                self.contador = 0
             if self.first_detection == 1 and self.giveup == 0:
                 if not self.is_lost and self.running == 1 :
-                    if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
+                    if self.detection.area_ratio < 0.40:  # Drone ainda esta longe do H
                         if(self.flag == 0):
                             rospy.loginfo("Controle PID")
                             self.flag = 1
@@ -132,8 +134,11 @@ class PrecisionLanding():
                             self.land_pub.publish(Bool(True))
                             self.rate.sleep()
                 elif self.running == 1:
-                    self.MAV.set_position(0,-0.3,0,0,relative_to_drone=True)
-                    print("de ladin")
+                    self.contador += 1
+                    if self.contador <= 10:
+                        self.MAV.set_position(0,-1,0,0,relative_to_drone=True)
+                        print("de ladin")
+                    self.rate.sleep()
 
             self.rate.sleep()
 
