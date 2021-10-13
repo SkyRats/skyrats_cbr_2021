@@ -234,7 +234,7 @@ class MRS_MAV:
         #    rospy.wait_for_service("/" + self.mav_name + "/odometry/toggle_garmin")
         #    print(self.garmin_toggle(False))
         rospy.wait_for_service("/" + self.mav_name + "/odometry/change_alt_estimator_type_string")
-        print(self.change_alt_estimator(value))
+        self.change_alt_estimator(value)
         
     
     def run(self):
