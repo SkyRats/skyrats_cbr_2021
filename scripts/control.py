@@ -13,7 +13,8 @@ from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
 from sensor_msgs.msg import Range
 
-VEL_CERTO = 0.16
+VEL_CERTO_X = 0.3
+VEL_CERTO_Y = 0.2
 
 class PrecisionLanding():
     def __init__(self, MAV):
@@ -28,6 +29,7 @@ class PrecisionLanding():
         self.land_pub = rospy.Publisher("/precision_land/land", Bool, queue_size=10)
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
         self.giveup_sub = rospy.Subscriber("/precision_landing/giveup", Bool, self.giveup_callback)
+        self.achou_pub = rospy.Publisher("/precision_landing/achou", Bool, queue_size=10)
 
 
         # Cam Params
@@ -48,8 +50,8 @@ class PrecisionLanding():
         kpz = 1
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
-        self.pid_x = PID(-0.008, 0, -0)
-        self.pid_y = PID(0.008, 0, 0)
+        self.pid_x = PID(-0.015, 0, -0)
+        self.pid_y = PID(0.015, 0, 0)
         # Negative parameters (CV's -y -> Frame's +z)
         self.pid_z = PID(-kpz, -kpz/talz, 0)
         self.pid_w = PID(0, 0, 0)  # Orientation
@@ -60,8 +62,8 @@ class PrecisionLanding():
         self.pid_w.setpoint = 0  # orientation
 
         # Limitacao da saida
-        self.pid_x.output_limits = self.pid_y.output_limits = (-1.5, 1.5)
-        self.pid_z.output_limits = (-1, 1)
+        self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
+        self.pid_z.output_limits = (-1.5, 1.5)
 
     def giveup_callback(self,data):
         self.giveup = data.data
@@ -77,7 +79,6 @@ class PrecisionLanding():
 
     def precision_land(self):
         while not rospy.is_shutdown():
-            flag =0 
             self.delay = time.time() - self.last_time
             self.is_lost = self.delay > 3
             if self.first_detection == 1:
@@ -86,33 +87,40 @@ class PrecisionLanding():
             
             if not self.is_lost and self.first_detection == 1 and self.giveup == 0:
                 if self.detection.area_ratio < 0.35:  # Drone ainda esta longe do H
-                    if(flag == 0):
+                    if(self.flag == 0):
                         rospy.loginfo("Controle PID")
-                        flag = 1
+                        self.flag = 1
                     
                     self.velocity.x= self.pid_x(-self.detection.center_y)
                     self.velocity.y = self.pid_y(self.detection.center_x)
-                    if(abs(self.velocity.x) < VEL_CERTO and abs(self.velocity.y) < VEL_CERTO):
+                    if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
                         self.velocity.z = self.pid_z(self.detection.area_ratio)
                     else:
                         self.velocity.z = 0
 
+                    print("Vel_x = " + str(self.velocity.x))
+                    print("Vel_y = " + str(self.velocity.y))
+                    print("Vel_z = " + str(self.velocity.z))
+
                     for b in range(10):
                         self.vel_publisher.publish(self.velocity)
                         self.rate.sleep()
+
+                    print()
 
                 else:
                     self.velocity.x = self.velocity.y = self.velocity.z = 0
                     for j in range(20):
                         self.vel_publisher.publish(self.velocity)
                         self.rate.sleep()
-                    if (flag == 1):
+                    if (self.flag == 1):
                         rospy.loginfo("Cruz encontrada!")
                         rospy.logwarn("Descendo...")
-                    flag = 0
-                    # Caso o drone esteja suficientemente perto do H
+                        for i in range(40):
+                            self.achou_pub.publish(Bool(True))
+                            self.rate.sleep()
+                        self.flag = 0
                     
-                    #self.MAV.set_position(0,-0.2 ,0,relative_to_drone=True)
                     now = rospy.get_rostime()
                     while not rospy.get_rostime() - now > rospy.Duration(secs=1):
                         self.rate.sleep()

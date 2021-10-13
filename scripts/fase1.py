@@ -23,6 +23,7 @@ class fase1:
 
         self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
+        self.achou_sub = rospy.Subscriber("/precision_landing/achou", Bool, self.achou_callback)
 
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
@@ -37,6 +38,9 @@ class fase1:
         # Cam Params
         self.image_pixel_width = 752
         self.image_pixel_height = 480
+
+    def achou_callback(self, data):
+        self.achou = data.data
 
     def land_callback(self, data):
         self.land = data.data
@@ -137,10 +141,12 @@ class fase1:
         '''cv2.imshow('mask_BaseMovel', mask_BaseMovel)
         cv2.waitKey(3)'''
 
+    #ALTURA DA TRAJETORIA
     def trajectory(self):
         self.mav.altitude_estimator("BARO")
         self.scan(1)
         for base in self.bases_moveis_1:
+            self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28)
             x,y = base
             rospy.loginfo("Indo para " + str(x) + " , " + str(y))
             for i in range(40):
@@ -208,20 +214,13 @@ class fase1:
         while self.lidar_range > 0.25:
             pass
         self.mav.disarm()
-
         self.bases_visitadas += 1
         rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
-        now = rospy.get_rostime()
-        while not rospy.get_rostime() - now > rospy.Duration(secs=4):
-            self.rate.sleep()
+        self.time(4)
         self.mav.arm()
-        now = rospy.get_rostime()
-        while not rospy.get_rostime() - now > rospy.Duration(secs=4):
-            self.rate.sleep()
+        self.time(4)
         self.mav.takeoff()
-        now = rospy.get_rostime()
-        while not rospy.get_rostime() - now > rospy.Duration(secs=6):
-            self.rate.sleep()
+        self.time(6)
         self.mav.altitude_estimator("BARO")
 
 
@@ -233,26 +232,35 @@ class fase1:
         now = rospy.get_rostime()
         giveup = 0
         while self.land == 0 and not giveup:
-            if rospy.get_rostime() - now > rospy.Duration(secs=60):
+            if (rospy.get_rostime() - now > rospy.Duration(secs=60)) and not self.achou:
                 print("Desisto dessa base")
                 for i in range(40):
                     self.giveup_publisher.publish(Bool(True))
                     self.rate.sleep()
                 giveup = 1
             self.rate.sleep()
+        for i in range(40):
+            self.cv_control_publisher.publish(Bool(False))
+            self.rate.sleep()
         self.bases_visitadas += 1
         if giveup == 0:
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
-            now = rospy.get_rostime()
-            while not rospy.get_rostime() - now > rospy.Duration(secs=6):
-                self.rate.sleep()
+            self.time(6)
             self.mav.arm()
-            now = rospy.get_rostime()
-            while not rospy.get_rostime() - now > rospy.Duration(secs=6):
-                self.rate.sleep()
+            self.time(4)
             self.mav.takeoff()
         self.land = 0
+        self.achou = 0
+        self.time(6)
         self.mav.altitude_estimator("BARO")
+        
+
+
+
+    def time(self, t):
+        now = rospy.get_rostime()
+        while not rospy.get_rostime() - now > rospy.Duration(secs=t):
+            self.rate.sleep()
 
 
     def go_to_fix(self, base):
