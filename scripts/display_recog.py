@@ -125,15 +125,17 @@ class display_cv:
                                 #cv2.imshow("warped",warped)
                                 #cv2.waitKey(15)
                                 #cv2.waitKey(0)
-                                if self.digit_recog(warped) == True:
-                                    return
+                                if self.checkOrientation(warped):
+                                    if self.digit_recog(warped) == True:
+                                        return True
+                                else:
+                                    return False
                             else:
                                 i += 1
                                 #cv2.rectangle(frame, (x2, y2), (x2 + w2, y2 + h2), (0,255,0))
 
                 if i >= 8:
                     break
-
             #cv2.imshow("teste webcam", warped)
             #cv2.waitKey(30) #pro pc do igor n morrer
     def digit_recog(self, image):
@@ -574,7 +576,6 @@ class display_cv:
         baixo = False
         esquerda = False
         direita = False
-        circles = []
         for c in cnts:
             (x, y, w, h) = cv2.boundingRect(c)
             roi = thresh[y:y+h, x:x+w]
@@ -585,7 +586,6 @@ class display_cv:
                 total = cv2.countNonZero(segROI)
                 if float(area) > 0 and total/float(area) > 0.7:
                     cv2.rectangle(image, (x,y), (x+w,y+h), (0, 0, 255), 2)
-                    circles.append([x, y])
                     if(x < np.shape(image)[1]/2):
                         esquerda = True
                     else:
@@ -597,14 +597,10 @@ class display_cv:
             else:
                 continue
 
-        if (cima and esquerda) and (baixo and esquerda):
-            return np.rot90(image, k=2, axes=(0,1))
-        elif (cima and esquerda) and (cima and direita):
-            return np.rot90(image, k=3, axes=(0,1))
-        elif (baixo and esquerda) and (baixo and direita):
-            return np.rot90(image, k=1, axes=(0,1))
+        if (cima and direita) and (baixo and direita):
+            return True
         else:
-            return image
+            return False
 
 class center_display:
    def __init__(self, mav, cv):
@@ -613,33 +609,21 @@ class center_display:
        self.frame = cv.cam_frame
        self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
    
-   def display_center(self):
-       while True:
-           self.frame = self.cv.cam_frame
-           self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-           lowerbpreto = np.array([0, 0, 0])
-           upperbpreto = np.array([4, 4, 4])
-           mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
-           kernel = np.ones((5,5), np.uint8)
-           #mask_preto = cv2.erode(mask_preto, kernel, iterations=1)
-           mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
-           contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-           if len(contours) == 0:
-               pass
-           try:
-               M = cv2.moments(contours[0])
-           except IndexError:
-               continue
-           try: 
-               cx = int(M['m10']/M['m00'])
-               cy = int(M['m01']/M['m00'])
-           except ZeroDivisionError:
-               continue
-           cv2.drawContours(self.frame, contours, -1, (0, 255, 0), 3)
-           cv2.imshow('frame',self.frame)
-           cv2.waitKey(15)
-           print(cx,cy, np.shape(self.frame))
-           return cx, cy
+   def is_there_a_display(self):
+        self.frame = self.cv.cam_frame
+        self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+        lowerbpreto = np.array([0, 0, 0])
+        upperbpreto = np.array([4, 4, 4])
+        mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
+        kernel = np.ones((5,5), np.uint8)
+        mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
+        cv2.imshow("mask_preto", mask_preto)
+        cv2.waitKey(15)
+        #contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if sum(sum(mask_preto)) > 0:
+            return True
+        else:
+            return False
    
    def centralize(self):
        x,y = self.display_center()
@@ -658,15 +642,15 @@ class center_display:
 
 
 class trajectory:
-    def __init__(self, mavbase, detector): #, center_display
+    def __init__(self, mavbase, detector, display): #, display
         self.mav = mavbase
         self.detector = detector
-        #self.center = center_display
+        self.displayPresence = display
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
-    
+
     def lidar_callback(self,data):
         self.lidar_range = data.range
-    
+
     def go_to_fix(self, base):
         if base == "offshore1":
             self.mav.altitude_estimator("BARO")
@@ -681,22 +665,70 @@ class trajectory:
             self.mav.altitude_estimator("HEIGHT")
             self.mav.set_position(-53.7, -35.2, 0.55)
 
+        if base == "movel1":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-53.7, -35.2, 28)
+            self.mav.set_position(30, -55, 4, hdg=1.57)
+            self.mav.set_position(30, -55, -6)
+        
+        if base == "movel2":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(30, -55, 4)
+            self.mav.set_position(60, 0, 4, hdg=1.57)
+            self.mav.set_position(60, 0, -6)
+        
+        if base == "movel3":
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(60, 0, 4)
+            self.mav.set_position(-30, 30, 4, hdg=1.57)
+            self.mav.set_position(-30, 30, -6)
+
     def mission_start(self):
         rospy.loginfo("Indo para a primeira base do offshore")
         self.go_to_fix("offshore1")
         time.sleep(5)
-        #self.detector.main_loop()
+        self.detector.main_loop()
 
         rospy.loginfo("Indo para a segunda base do offshore")
         self.go_to_fix("offshore2")
         time.sleep(5)
-        #self.detector.main_loop()
+        self.detector.main_loop()
+
+        rospy.loginfo("Indo para a primeira base movel")
+        self.go_to_fix("movel1")
+        time.sleep(1)
+        present = self.displayPresence.is_there_a_display()
+        print(present)
+        #if present:
+        #    time.sleep(5)
+        #    while not (self.detector.main_loop()):
+        #        self.mav.set_position(0, 0, 0, hdg=0.15, relative_to_drone=True)
+
+        rospy.loginfo("Indo para a segunda movel")
+        self.go_to_fix("movel2")
+        time.sleep(1)
+        present = self.displayPresence.is_there_a_display()
+        print(present)
+        #if present:
+        #    time.sleep(5)
+        #    while not (self.detector.main_loop()):
+        #        self.mav.set_position(0, 0, 0, hdg=0.15, relative_to_drone=True)
+
+        rospy.loginfo("Indo para a terceira movel")
+        self.go_to_fix("movel3")
+        time.sleep(1)
+        present = self.displayPresence.is_there_a_display()
+        print(present)
+        #if present:
+        #    time.sleep(5)
+        #    while not (self.detector.main_loop()):
+        #        self.mav.set_position(0, 0, 0, hdg=0.15, relative_to_drone=True)
 
         rospy.loginfo("Missao concluida, retornando para a base costeira")
         self.mav.altitude_estimator("BARO")
         self.mav.set_position(10, 90, 4, hdg= 1.57)
         self.mav.altitude_estimator("HEIGHT")
-        self.mav.set_position(10, 90, 1.5, hdg= 1.57)
+        self.mav.set_position(10, 90, 1, hdg= 1.57)
         rospy.loginfo("Pousando")
         self.mav.land()
         while self.lidar_range > 0.25:
@@ -708,7 +740,11 @@ if __name__ == "__main__":
     rospy.init_node("display_recognition")
     mav = MRS_MAV("uav1")
     detector = display_cv()
-    # detector.main_loop()
-    center = center_display(mav, detector)
-    controller = trajectory(mav, detector)
+    display = center_display(mav, detector)
+    controller = trajectory(mav, detector, display)
     controller.mission_start()
+    
+    #controller.go_to_fix("movel3")
+    #while True:
+    #    print(display.is_there_a_display())
+    #detector.main_loop()
