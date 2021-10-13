@@ -32,7 +32,6 @@ class display_cv:
         self.cam_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw/", Image, self.cam_callback)
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw/", Image)
 
-
     def cam_callback(self, data):
         try:
             self.cam_frame = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
@@ -45,6 +44,10 @@ class display_cv:
             # frame = np.array(frame)
             #print(frame.shape) #cursed BGR
             frame = self.cam_frame
+            # print(np.shape(frame))
+            # frame = np.rot90(frame, k=3, axes=(0,1))
+            # cv2.imshow("digit_recog test", frame)
+            # cv2.waitKey(0)
             #Tratamento de imagem
             # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # blurred = cv2.GaussianBlur(gray, (3, 3), 0)
@@ -105,7 +108,7 @@ class display_cv:
             for c in cnts:
                 (x1, y1, w1, h1) = cv2.boundingRect(c)
                 i = 0
-                if (h1)/(w1) >= 0.85 and (h1)/(w1) <= 1.15:
+                if (h1)/(w1) >= 0.85 and (h1)/(w1) <= 1.15 and cv2.contourArea(c) <= 20000:
                     for c2 in cnts:
                         (x2, y2, w2, h2) = cv2.boundingRect(c2)
                         if( (x2 > x1) and (y2 > y1) and (x1 + w1 > x2 + w2) and (y1 + h1 > y2 + h2) ):
@@ -128,7 +131,7 @@ class display_cv:
                                 i += 1
                                 #cv2.rectangle(frame, (x2, y2), (x2 + w2, y2 + h2), (0,255,0))
 
-                if i >= 10:
+                if i >= 8:
                     break
 
             #cv2.imshow("teste webcam", warped)
@@ -153,7 +156,6 @@ class display_cv:
         # path = "display_metano0.png"
         # # #Baixando a imagem
         # image = cv2.imread("" + path)
-
         #Tratamento de imagem
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (1, 1), 0)
@@ -403,7 +405,8 @@ class display_cv:
         #     except ValueError:
         #         print("second number's digit value error (else)")
         #         return False
-        print(primeiro_digito, end="%\n")
+        print(primeiro_digito)
+        # print(primeiro_digito, end="%\n")
 
         if primeiro_digito > 55 or primeiro_digito < 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
@@ -414,7 +417,8 @@ class display_cv:
         # print("\n(Apos 30 segundos) Procedendo para leitura do ajuste de zero...\n")
         time.sleep(35)
 
-        print(segundo_digito, end="%\n")
+        # print(segundo_digito, end="%\n")
+        print(segundo_digito)
         if segundo_digito > 5 or segundo_digito <= -5:
             print('\033[1;37;41m AJUSTE DE ZERO FORA DE CONFORMIDADE \033[0;0m')
             # print('\a')
@@ -550,59 +554,107 @@ class display_cv:
         (x, y, w, h) = cv2.boundingRect(c)
         return x
 
-    def sorter2(self, c):
-        (x, y, w, h) = cv2.boundingRect(c)
-        return y
-        
-#class center_display:
-#    def __init__(self, mav, cv):
-#        self.cv = cv
-#        self.mav = mav
-#        self.frame = cv.cam_frame
-#        self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-#    
-#    def display_center(self):
-#        while True:
-#            self.frame = self.cv.cam_frame
-#            self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-#            lowerbpreto = np.array([0, 0, 0])
-#            upperbpreto = np.array([4, 4, 4])
-#            mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
-#            kernel = np.ones((5,5), np.uint8)
-#            #mask_preto = cv2.erode(mask_preto, kernel, iterations=1)
-#            mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
-#            contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#            if len(contours) == 0:
-#                pass
-#            try:
-#                M = cv2.moments(contours[0])
-#            except IndexError:
-#                continue
-#            try: 
-#                cx = int(M['m10']/M['m00'])
-#                cy = int(M['m01']/M['m00'])
-#            except ZeroDivisionError:
-#                continue
-#            cv2.drawContours(self.frame, contours, -1, (0, 255, 0), 3)
-#            cv2.imshow('frame',self.frame)
-#            cv2.waitKey(15)
-#            print(cx,cy, np.shape(self.frame))
-#            return cx, cy
-#    
-#    def centralize(self):
-#        x,y = self.display_center()
-#        while (x > 245 or x < 235) or (y > 381 or y < 371):
-#            x,y = self.display_center()
-#            print(x,y)
-#            if x > 245:
-#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y + 0.12)
-#            if x < 235:
-#                self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y - 0.12)
-#            if y > 381:
-#                self.mav.set_position(self.mav.controller_data.position.x + 0.12, self.mav.controller_data.position.y)
-#            if y < 371:
-#                self.mav.set_position(self.mav.controller_data.position.x - 0.12, self.mav.controller_data.position.y)
-#        #self.mav.set_position(self.mav.controller_data.position.x - 0.15, self.mav.controller_data.position.y + 0.15)
+    def checkOrientation(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (1, 1), 0)
+        thresh = cv2.threshold(blurred, 0, 255,	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 4))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        # thresh = cv2.dilate(thresh,kernel,iterations = 3)
+        thresh = cv2.dilate(thresh,kernel,iterations = 1)
+        cv2.imshow("thresh_orientation", thresh)
+        cv2.waitKey(15)
+        # cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # cnts = imutils.grab_contours(cnts)
+
+        cima = False
+        baixo = False
+        esquerda = False
+        direita = False
+        circles = []
+        for c in cnts:
+            (x, y, w, h) = cv2.boundingRect(c)
+            roi = thresh[y:y+h, x:x+w]
+            
+            area = cv2.contourArea(c)
+            if (h)/(w) > 0.85 and h/w < 1.15 and area < 5*float(np.shape(image)[0]*np.shape(image)[1])/100:
+                segROI = roi[0:h, 0:w]
+                total = cv2.countNonZero(segROI)
+                if float(area) > 0 and total/float(area) > 0.7:
+                    cv2.rectangle(image, (x,y), (x+w,y+h), (0, 0, 255), 2)
+                    circles.append([x, y])
+                    if(x < np.shape(image)[1]/2):
+                        esquerda = True
+                    else:
+                        direita = True
+                    if(y < np.shape(image)[0]/2):
+                        cima = True
+                    else:
+                        baixo = True
+            else:
+                continue
+
+        if (cima and esquerda) and (baixo and esquerda):
+            return np.rot90(image, k=2, axes=(0,1))
+        elif (cima and esquerda) and (cima and direita):
+            return np.rot90(image, k=3, axes=(0,1))
+        elif (baixo and esquerda) and (baixo and direita):
+            return np.rot90(image, k=1, axes=(0,1))
+        else:
+            return image
+
+class center_display:
+   def __init__(self, mav, cv):
+       self.cv = cv
+       self.mav = mav
+       self.frame = cv.cam_frame
+       self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+   
+   def display_center(self):
+       while True:
+           self.frame = self.cv.cam_frame
+           self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+           lowerbpreto = np.array([0, 0, 0])
+           upperbpreto = np.array([4, 4, 4])
+           mask_preto = cv2.inRange(self.hsv, lowerbpreto, upperbpreto)
+           kernel = np.ones((5,5), np.uint8)
+           #mask_preto = cv2.erode(mask_preto, kernel, iterations=1)
+           mask_preto = cv2.dilate(mask_preto ,kernel,iterations = 3)
+           contours, hierarchy = cv2.findContours(mask_preto, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+           if len(contours) == 0:
+               pass
+           try:
+               M = cv2.moments(contours[0])
+           except IndexError:
+               continue
+           try: 
+               cx = int(M['m10']/M['m00'])
+               cy = int(M['m01']/M['m00'])
+           except ZeroDivisionError:
+               continue
+           cv2.drawContours(self.frame, contours, -1, (0, 255, 0), 3)
+           cv2.imshow('frame',self.frame)
+           cv2.waitKey(15)
+           print(cx,cy, np.shape(self.frame))
+           return cx, cy
+   
+   def centralize(self):
+       x,y = self.display_center()
+       while (x > 245 or x < 235) or (y > 381 or y < 371):
+           x,y = self.display_center()
+           print(x,y)
+           if x > 245:
+               self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y + 0.12)
+           if x < 235:
+               self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y - 0.12)
+           if y > 381:
+               self.mav.set_position(self.mav.controller_data.position.x + 0.12, self.mav.controller_data.position.y)
+           if y < 371:
+               self.mav.set_position(self.mav.controller_data.position.x - 0.12, self.mav.controller_data.position.y)
+       #self.mav.set_position(self.mav.controller_data.position.x - 0.15, self.mav.controller_data.position.y + 0.15)
 
 
 class trajectory:
@@ -656,6 +708,7 @@ if __name__ == "__main__":
     rospy.init_node("display_recognition")
     mav = MRS_MAV("uav1")
     detector = display_cv()
-    #center = center_display(mav, detector)
+    # detector.main_loop()
+    center = center_display(mav, detector)
     controller = trajectory(mav, detector)
     controller.mission_start()
