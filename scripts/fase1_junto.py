@@ -7,23 +7,27 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from MRS_MAV import MRS_MAV
 from std_msgs.msg import Bool
-from sensor_msgs.msg import Range
-
-
+from pickle import FALSE
 import time
+from skyrats_cbr_2021.msg import H_info
+from geometry_msgs.msg import TwistStamped, PoseStamped
+from geometry_msgs.msg import Vector3
+from simple_pid import PID
+from mrs_msgs.msg import PositionCommand
+
 MIN_LAR = 1200
 TOL_BASE = 8
 
+VEL_CERTO_X = 0.3
+VEL_CERTO_Y = 0.2
+
 class fase1:
     def __init__(self,mav):
+        self.detection_sub = rospy.Subscriber('/precision_landing/detection', H_info, self.detection_callback)
+        self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10)
+        self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
         self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback)
         self.bridge_object = CvBridge()
-        self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
-        self.giveup_publisher = rospy.Publisher("/precision_landing/giveup", Bool, queue_size=10)
-
-        self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
-        self.achou_sub = rospy.Subscriber("/precision_landing/achou", Bool, self.achou_callback)
-
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
         self.bases_moveis_1 =[]
@@ -33,19 +37,103 @@ class fase1:
         self.land = 0
         self.soma = 0
         self.rate = rospy.Rate(60)
+        self.last_time = time.time()
+
 
         # Cam Params
         self.image_pixel_width = 752
         self.image_pixel_height = 480
 
-    def achou_callback(self, data):
-        self.achou = data.data
+        # Attributes
+        self.giveup = 0
+        self.delay = 0
+        self.is_lost = True
+        self.first_lost = 0
+        self.flag = 0
+        self.done = 0
+        self.first = True
+        self.velocity = Vector3()
+        self.first_detection = 0
+        talz = 15 #segundos
+        kpz = 1
+        # PIDs
+        # Parametros Proporcional,Integrativo e Derivativo
+        self.pid_x = PID(-0.015, 0, -0)
+        self.pid_y = PID(0.015, 0, 0)
+        # Negative parameters (CV's -y -> Frame's +z)
+        self.pid_z = PID(-kpz, -kpz/talz, 0)
+        self.pid_w = PID(0, 0, 0)  # Orientation
 
-    def land_callback(self, data):
-        self.land = data.data
+        self.pid_x.setpoint = self.image_pixel_height/2  # y size
+        self.pid_y.setpoint = self.image_pixel_width/2  # x
+        self.pid_z.setpoint = 1 #Podemos mudar para um lidar (fazer um filtro)
+        self.pid_w.setpoint = 0  # orientation
+
+        # Limitacao da saida
+        self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
+        self.pid_z.output_limits = (-1.5, 1.5)
+
+    def detection_callback(self, vector_data):
+        # Dados enviados pelo H.cpp -> Centro do H e Proximidade do H (Area ratio)
+        self.detection = vector_data
+        self.last_time = time.time()
+        self.first_detection = 1
 
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
+
+    def precision_land(self):
+            self.delay = time.time() - self.last_time
+            self.is_lost = self.delay > 3
+            if self.first_detection == 1:
+
+                if not self.is_lost:
+                    if self.detection.area_ratio < 0.40:  # Drone ainda esta longe do H
+                        if(self.flag == 0):
+                            rospy.loginfo("Controle PID")
+                            self.flag = 1
+                        
+                        self.velocity.x= self.pid_x(-self.detection.center_y)
+                        self.velocity.y = self.pid_y(self.detection.center_x)
+                        if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
+                            self.velocity.z = self.pid_z(self.detection.area_ratio)
+                        else:
+                            self.velocity.z = 0
+                        
+                        print("Centerx " + str(self.detection.center_x))
+                        print("Centery" + str(self.detection.center_y))                   
+                        print("Velx: " + str(self.velocity.x))
+                        print("Vely: " + str(self.velocity.y))
+                        print("Area: " + str(self.detection.area_ratio))
+
+                        for b in range(10):
+                            self.vel_publisher.publish(self.velocity)
+                            self.rate.sleep()
+
+                    else:
+                        self.velocity.x = self.velocity.y = self.velocity.z = 0
+                        for j in range(20):
+                            self.vel_publisher.publish(self.velocity)
+                            self.rate.sleep()
+                        if (self.flag == 1):
+                            rospy.loginfo("Cruz encontrada!")
+                            rospy.logwarn("Descendo...")
+                            self.achou = 1
+                            self.flag = 0
+                        
+                        self.time(1)
+                        #self.MAV.altitude_estimator("HEIGHT")
+                        self.mav.land()
+                        self.time(3)
+                        self.mav.disarm()
+                        self.land = 1
+                else:
+                    
+                    self.mav.set_position(0,-1,0,0,relative_to_drone=True)
+                    print("de ladin")
+                    self.rate.sleep()
+
+            self.rate.sleep()
 
     def tubo(self):
         if self.encontrou_lar == False:
@@ -71,9 +159,6 @@ class fase1:
                 self.encontrou_lar = True
                 rospy.loginfo("TUBO DETECTADO")
                 
-        
-            cv2.imshow('mask_laranja', mask_laranja)
-            cv2.waitKey(3)
     
     def scan(self, number):
         if number == 0:
@@ -81,14 +166,14 @@ class fase1:
             cord_y = -5
             self.mav.set_position(50, -5, 50, hdg = 0)
             rospy.loginfo("Iniciando Analise do terreno")
-            time.sleep(15)
+            self.time(8)
             hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
         if number == 1:
             cord_x = -45
             cord_y = -5
             self.mav.set_position(-45, -5, 50, hdg = 0)
             rospy.loginfo("Iniciando Analise do terreno")
-            time.sleep(15)
+            self.time(8)
             rows, cols, a = self.cv_image.shape
             cv2.circle(self.cv_image, (int(cols * 62/100),int(rows * 45/100)), 75, (0,255,0), -1)
             hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
@@ -140,18 +225,16 @@ class fase1:
     #ALTURA DA TRAJETORIA
     def trajectory(self):
         #self.mav.altitude_estimator("BARO")
+        self.landing_control()
         self.scan(1)
         for base in self.bases_moveis_1:
             self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
             x,y = base
             rospy.loginfo("Indo para " + str(x) + " , " + str(y))
-            for i in range(40):
-                self.giveup_publisher.publish(Bool(False))
-                self.rate.sleep()
+            self.giveup = False
             self.mav.set_position(x,y,28,1.57)
             self.mav.set_position(x,y,-6,1.57)
             self.landing_control()
-            rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
 
         if (self.mav.controller_data.position.x > -19.5 and self.mav.controller_data.position.y > 21):
             print("mav.controller_data.position: " + str(self.mav.controller_data.position.x)+ str(self.mav.controller_data.position.y))
@@ -187,9 +270,7 @@ class fase1:
 
                 if skip == 0:
                     rospy.loginfo("Indo para " + str(x) + " , " + str(y))
-                    for i in range(40):
-                        self.giveup_publisher.publish(Bool(False))
-                        self.rate.sleep()
+                    self.giveup = False
                     self.mav.set_position(x,y,8,1.57)
                     self.mav.set_position(x,y,-7.5,1.57)
                     self.landing_control()
@@ -218,37 +299,28 @@ class fase1:
         #self.mav.altitude_estimator("BARO")
 
 
-    def landing_control(self):
-        self.time(1)
-        for i in range(40):
-            self.cv_control_publisher.publish(Bool(True))
-            self.rate.sleep()
-
+    def landing_control(self):        
         now = rospy.get_rostime()
-        giveup = 0
-        while self.land == 0 and not giveup:
-            if (rospy.get_rostime() - now > rospy.Duration(secs=60)) and not self.achou:
-                print("Desisto dessa base")
-                for i in range(40):
-                    self.giveup_publisher.publish(Bool(True))
-                    self.rate.sleep()
-                giveup = 1
-            self.rate.sleep()
+        self.giveup = 0
+        while self.land == 0 and not self.giveup :
+            #if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
+            #   print("Desisto dessa base")
+            #   self.giveup = 1
+            for i in range(40):
+                self.cv_control_publisher.publish(Bool(True))
+                self.rate.sleep()
+            self.precision_land()
+
         for i in range(40):
             self.cv_control_publisher.publish(Bool(False))
             self.rate.sleep()
         self.bases_visitadas += 1
-        if giveup == 0:
+        if self.giveup == 0:
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
             self.time(6)
             self.mav.arm()
             self.time(4)
             self.mav.takeoff()
-        self.land = 0
-        self.achou = 0
-        #self.time(6)
-        #self.mav.altitude_estimator("BARO")
-        
 
 
 
@@ -263,7 +335,7 @@ class fase1:
             #self.mav.altitude_estimator("BARO")
             self.mav.set_position(45.15, 10, 4,1.57)
             #self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45.15, 10, -6,1.57)
+            self.mav.set_position(45.15, 10, -7,1.57)
 
         if base == "offshore1":
             #self.mav.altitude_estimator("BARO")
@@ -273,7 +345,7 @@ class fase1:
 
         if base == "offshore2":
             #self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-53.7, -35.2, 4,1.57)
+            self.mav.set_position(-53.7, -35.2, 3,1.57)
             #self.mav.altitude_estimator("HEIGHT")
             #self.mav.set_position(-53.7, -35.2, 0.55,1.57)
 
