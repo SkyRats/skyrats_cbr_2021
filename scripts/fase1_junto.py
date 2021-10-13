@@ -58,7 +58,7 @@ class fase1:
         kpz = 1
         # PIDs
         # Parametros Proporcional,Integrativo e Derivativo
-        self.pid_x = PID(-0.015, 0, -0)
+        self.pid_x = PID(-0.005, 0, -0)
         self.pid_y = PID(0.015, 0, 0)
         # Negative parameters (CV's -y -> Frame's +z)
         self.pid_z = PID(-kpz, -kpz/talz, 0)
@@ -70,7 +70,7 @@ class fase1:
         self.pid_w.setpoint = 0  # orientation
 
         # Limitacao da saida
-        self.pid_x.output_limits = self.pid_y.output_limits = (-1, 1)
+        self.pid_x.output_limits = self.pid_y.output_limits = (-5, 5)
         self.pid_z.output_limits = (-1.5, 1.5)
 
     def detection_callback(self, vector_data):
@@ -88,12 +88,12 @@ class fase1:
             if self.first_detection == 1:
 
                 if not self.is_lost:
-                    if self.detection.area_ratio < 0.40:  # Drone ainda esta longe do H
+                    if self.detection.area_ratio < 0.30:  # Drone ainda esta longe do H
                         if(self.flag == 0):
                             rospy.loginfo("Controle PID")
                             self.flag = 1
                         
-                        self.velocity.x= self.pid_x(-self.detection.center_y)
+                        self.velocity.x= self.pid_x(-self.detection.center_y) + 2.4
                         self.velocity.y = self.pid_y(self.detection.center_x)
                         if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
                             self.velocity.z = self.pid_z(self.detection.area_ratio)
@@ -225,7 +225,7 @@ class fase1:
     #ALTURA DA TRAJETORIA
     def trajectory(self):
         #self.mav.altitude_estimator("BARO")
-        self.landing_control()
+        #self.landing_control()
         self.scan(1)
         for base in self.bases_moveis_1:
             self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)

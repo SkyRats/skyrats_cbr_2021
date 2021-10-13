@@ -7,7 +7,7 @@
   />
   <node
     pkg="skyrats_cbr_2021"
-    type="fase1.py"
+    type="fase1_junto.py"
     name="fase1"
     output="screen"
   /> 

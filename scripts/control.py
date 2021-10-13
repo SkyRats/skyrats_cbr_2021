@@ -90,7 +90,7 @@ class PrecisionLanding():
                     self.is_lost = 1
             if self.first_detection == 1 and self.giveup == 0:
                 if not self.is_lost and self.running == 1 :
-                    if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
+                    if self.detection.area_ratio < 0.35:  # Drone ainda esta longe do H
                         if(self.flag == 0):
                             rospy.loginfo("Controle PID")
                             self.flag = 1
