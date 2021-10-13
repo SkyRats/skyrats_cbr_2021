@@ -3,7 +3,6 @@ import numpy as np
 import rospy
 from sensor_msgs.msg import Image, Range
 from cv_bridge import CvBridge,CvBridgeError
-import time
 from MRS_MAV import MRS_MAV
 
 
@@ -46,7 +45,7 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "vermelho"
-                    rospy.logerr("Sensor " + str(aux) +": Vermelho!!!")
+                    rospy.loginfo("Sensor " + str(aux) +": Vermelho!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
                 cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
@@ -72,7 +71,7 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "verde"
-                    rospy.logwarn("Sensor " + str(aux) +": Verde!!!")
+                    rospy.loginfo("Sensor " + str(aux) +": Verde!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
                 cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
@@ -98,7 +97,6 @@ class pipeline_scanner:
 
     def run(self):
         rospy.loginfo("Indo para o tubo")
-        self.mav.altitude_estimator("BARO")
         self.mav.set_position(-49.6, -24.7, 3, relative_to_drone=False)
         rospy.loginfo("Cheguei, descendo")
         self.mav.altitude_estimator("HEIGHT")
