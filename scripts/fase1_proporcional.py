@@ -284,8 +284,8 @@ class fase1:
         self.mav.arm()
         self.time(4)
         self.mav.takeoff()
-        #self.time(6)
-        #self.mav.altitude_estimator("BARO")
+        self.time(6)
+        self.mav.altitude_estimator("BARO")
 
 
     def landing_control(self):        
