@@ -19,6 +19,8 @@ class fase1:
         self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback)
         self.bridge_object = CvBridge()
         self.cv_control_publisher = rospy.Publisher("/precision_landing/set_running_state", Bool, queue_size=10)
+        self.giveup_publisher = rospy.Publisher("/precision_landing/giveup", Bool, queue_size=10)
+
         self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
         self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
 
@@ -141,6 +143,9 @@ class fase1:
         for base in self.bases_moveis_1:
             x,y = base
             rospy.loginfo("Indo para " + str(x) + " , " + str(y))
+            for i in range(40):
+                self.giveup_publisher.publish(Bool(False))
+                self.rate.sleep()
             self.mav.set_position(x,y,28)
             self.mav.set_position(x,y,-6)
             self.landing_control()
@@ -181,6 +186,9 @@ class fase1:
 
                 if skip == 0:
                     rospy.loginfo("Indo para " + str(x) + " , " + str(y))
+                    for i in range(40):
+                        self.giveup_publisher.publish(Bool(False))
+                        self.rate.sleep()
                     self.mav.set_position(x,y,8)
                     self.mav.set_position(x,y,-7.5)
                     self.landing_control()
@@ -227,6 +235,9 @@ class fase1:
         while self.land == 0 and not giveup:
             if rospy.get_rostime() - now > rospy.Duration(secs=60):
                 print("Desisto dessa base")
+                for i in range(40):
+                    self.giveup_publisher.publish(Bool(True))
+                    self.rate.sleep()
                 giveup = 1
             self.rate.sleep()
         self.bases_visitadas += 1
