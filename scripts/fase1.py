@@ -22,7 +22,6 @@ class fase1:
         self.giveup_publisher = rospy.Publisher("/precision_landing/giveup", Bool, queue_size=10)
 
         self.land_sub = rospy.Subscriber("/precision_land/land", Bool, self.land_callback)
-        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
         self.achou_sub = rospy.Subscriber("/precision_landing/achou", Bool, self.achou_callback)
 
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
@@ -44,9 +43,6 @@ class fase1:
 
     def land_callback(self, data):
         self.land = data.data
-
-    def lidar_callback(self,data):
-        self.lidar_range = data.range
 
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
@@ -202,13 +198,15 @@ class fase1:
         
         self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9,1.57)
         self.mav.set_position(10,90,9,1.57)
-        self.landing()
+        self.mav.land()    
+        self.time(4)
+        self.mav.disarm()
+
 
 
     def landing(self):    
         self.mav.land()    
-        while self.lidar_range > 0.25:
-            pass
+        self.time(4)
         self.mav.disarm()
         self.bases_visitadas += 1
         rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
