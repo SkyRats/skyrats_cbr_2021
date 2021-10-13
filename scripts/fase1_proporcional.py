@@ -18,7 +18,7 @@ from mrs_msgs.msg import PositionCommand
 MIN_LAR = 1200
 TOL_BASE = 8
 
-VEL_CERTO_X = 0.3
+VEL_CERTO_X = 0.2
 VEL_CERTO_Y = 0.2
 
 class fase1:
@@ -80,15 +80,12 @@ class fase1:
                             self.flag = 1
                         
                         erro_x = self.detection.center_y - self.setpoint_x 
-                        erro_y = self.detection.center_x - self.setpoint_y
-
-                        print("errox " + str(erro_x))
-                        print("erroy" + str(erro_y))  
+                        erro_y = self.detection.center_x - self.setpoint_y 
 
                         p = 0.01
                          
-                        self.velocity.x= erro_x * p
-                        self.velocity.y = erro_y * p
+                        self.velocity.x= -erro_x * p
+                        self.velocity.y = -erro_y * p
                         if self.velocity.x > 1:
                             self.velocity.x =1
                         if self.velocity.x < -1:
@@ -102,10 +99,6 @@ class fase1:
                             self.velocity.z = -1
                         else:
                             self.velocity.z = 0
-                        
-                           
-                        print("Velx: " + str(self.velocity.x))
-                        print("Vely: " + str(self.velocity.y))
                        
 
                         for b in range(10):
@@ -120,14 +113,8 @@ class fase1:
                         if (self.flag == 1):
                             rospy.loginfo("Cruz encontrada!")
                             rospy.logwarn("Descendo...")
-                            self.achou = 1
                             self.flag = 0
                         
-                        self.time(1)
-                        #self.MAV.altitude_estimator("HEIGHT")
-                        self.mav.land()
-                        self.time(3)
-                        self.mav.disarm()
                         self.land = 1
                 else:
                     pass
@@ -199,7 +186,6 @@ class fase1:
             cv2.drawContours(self.cv_image, contours, -1, (0, 255, 0), 3)
             #cv2.imshow('cv_image',self.cv_image)
             cv2.waitKey(15)
-            print(cx,cy, np.shape(self.cv_image))
             
             one_pixel_in_meters = 0.28     #0.224691382978
             image_center_x = self.image_pixel_width/2
@@ -228,6 +214,7 @@ class fase1:
     #ALTURA DA TRAJETORIA
     def trajectory(self):
         #self.mav.altitude_estimator("BARO")
+        #self.landing_control()
         self.scan(0)
         for base in self.bases_moveis_0:
             self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
@@ -246,7 +233,7 @@ class fase1:
                 skip = 0
                 x,y = base
 
-                for lista in self.bases_moveis_1:
+                for lista in self.bases_moveis_0:
                     if abs(lista[0] - x) < TOL_BASE and abs(lista[1] - y) < TOL_BASE:
                         rospy.loginfo("Ja foi visitada a base " + str(x) + " , " +str(y))
                         skip = 1
@@ -254,7 +241,7 @@ class fase1:
                 if skip == 0:
                     rospy.loginfo("Indo para " + str(x) + " , " + str(y))
                     self.giveup = False
-                    self.mav.set_position(x,y,8,1.57)
+                    self.mav.set_position(x,y,28,1.57)
                     self.mav.set_position(x,y,-6,1.57)
                     self.landing_control()
 
@@ -279,6 +266,8 @@ class fase1:
 
         self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9,1.57)
         self.mav.set_position(10,90,9,1.57)
+        self.mav.altitude_estimator("HEIGHT")
+        self.mav.set_position(10,90,0.55,1.57)
         self.mav.land()    
         self.time(4)
         self.mav.disarm()
@@ -287,7 +276,7 @@ class fase1:
 
     def landing(self):    
         self.mav.land()    
-        self.time(4)
+        self.time(8)
         self.mav.disarm()
         self.bases_visitadas += 1
         rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
@@ -303,17 +292,21 @@ class fase1:
         now = rospy.get_rostime()
         self.giveup = 0
         while self.land == 0 and not self.giveup :
-            #if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
-            #   print("Desisto dessa base")
-            #   self.giveup = 1
+            if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
+               print("Desisto dessa base")
+               self.giveup = 1
             for i in range(40):
                 self.cv_control_publisher.publish(Bool(True))
                 self.rate.sleep()
             self.precision_land()
+        self.land = 0
 
         for i in range(40):
             self.cv_control_publisher.publish(Bool(False))
             self.rate.sleep()
+        self.mav.land()
+        self.time(1)
+        self.mav.disarm()
         self.bases_visitadas += 1
         if self.giveup == 0:
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
@@ -321,6 +314,8 @@ class fase1:
             self.mav.arm()
             self.time(4)
             self.mav.takeoff()
+            self.time(6)
+            self.mav.altitude_estimator("BARO")
 
 
 
@@ -332,22 +327,22 @@ class fase1:
 
     def go_to_fix(self, base):
         if base == "pier":
-            #self.mav.altitude_estimator("BARO")
+            self.mav.altitude_estimator("BARO")
             self.mav.set_position(45.15, 10, 4,1.57)
-            #self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45.15, 10, -7,1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(45.15, 10, 0.55,1.57)
 
         if base == "offshore1":
-            #self.mav.altitude_estimator("BARO")
+            self.mav.altitude_estimator("BARO")
             self.mav.set_position(-19.10, -21.1, 4,1.57)
-            #self.mav.altitude_estimator("HEIGHT")
-            #self.mav.set_position(-19.10, -21.1, 0.55,1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-19.10, -21.1, 0.55,1.57)
 
         if base == "offshore2":
-            #self.mav.altitude_estimator("BARO")
+            self.mav.altitude_estimator("BARO")
             self.mav.set_position(-53.7, -35.2, 3,1.57)
-            #self.mav.altitude_estimator("HEIGHT")
-            #self.mav.set_position(-53.7, -35.2, 0.55,1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-53.7, -35.2, 0.55,1.57)
 
 
 if __name__ == "__main__":
