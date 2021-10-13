@@ -136,7 +136,8 @@ class PrecisionLanding():
                         self.land_pub.publish(Bool(True))
                         self.rate.sleep()
             elif self.running == 1:
-                self.MAV.set_position(0.1,0,0,0,relative_to_drone=True)
+                self.MAV.set_position(0.15,0,0,0,relative_to_drone=True)
+                print("de ladin")
 
             self.rate.sleep()
 
