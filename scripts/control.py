@@ -59,7 +59,7 @@ class PrecisionLanding():
 
         self.pid_x.setpoint = self.image_pixel_height/2  # y size
         self.pid_y.setpoint = self.image_pixel_width/2  # x
-        self.pid_z.setpoint = 0.7 #Podemos mudar para um lidar (fazer um filtro)
+        self.pid_z.setpoint = 1 #Podemos mudar para um lidar (fazer um filtro)
         self.pid_w.setpoint = 0  # orientation
 
         # Limitacao da saida
@@ -124,14 +124,15 @@ class PrecisionLanding():
                             self.rate.sleep()
                         #self.MAV.altitude_estimator("HEIGHT")
                         self.MAV.land()
-                        while self.lidar_range > 0.25:
-                            pass
+                        now = rospy.get_rostime()
+                        while not rospy.get_rostime() - now > rospy.Duration(secs=3):
+                            self.rate.sleep()
                         self.MAV.disarm()
                         for i in range(40):
                             self.land_pub.publish(Bool(True))
                             self.rate.sleep()
                 elif self.running == 1:
-                    self.MAV.set_position(0.3,0,0,0,relative_to_drone=True)
+                    self.MAV.set_position(0,-0.3,0,0,relative_to_drone=True)
                     print("de ladin")
 
             self.rate.sleep()

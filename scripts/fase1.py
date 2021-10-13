@@ -143,7 +143,7 @@ class fase1:
 
     #ALTURA DA TRAJETORIA
     def trajectory(self):
-        self.mav.altitude_estimator("BARO")
+        #self.mav.altitude_estimator("BARO")
         self.scan(1)
         for base in self.bases_moveis_1:
             self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
@@ -216,8 +216,8 @@ class fase1:
         self.mav.arm()
         self.time(4)
         self.mav.takeoff()
-        self.time(6)
-        self.mav.altitude_estimator("BARO")
+        #self.time(6)
+        #self.mav.altitude_estimator("BARO")
 
 
     def landing_control(self):
@@ -248,8 +248,8 @@ class fase1:
             self.mav.takeoff()
         self.land = 0
         self.achou = 0
-        self.time(6)
-        self.mav.altitude_estimator("BARO")
+        #self.time(6)
+        #self.mav.altitude_estimator("BARO")
         
 
 
@@ -262,22 +262,22 @@ class fase1:
 
     def go_to_fix(self, base):
         if base == "pier":
-            self.mav.altitude_estimator("BARO")
-            self.mav.set_position(45, 10, 4,1.57)
-            self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(45, 10, 0.55,1.57)
+            #self.mav.altitude_estimator("BARO")
+            self.mav.set_position(45.15, 10, 4,1.57)
+            #self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(45.15, 10, -6,1.57)
 
         if base == "offshore1":
-            self.mav.altitude_estimator("BARO")
+            #self.mav.altitude_estimator("BARO")
             self.mav.set_position(-19.10, -21.1, 4,1.57)
-            self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-19.10, -21.1, 0.55,1.57)
+            #self.mav.altitude_estimator("HEIGHT")
+            #self.mav.set_position(-19.10, -21.1, 0.55,1.57)
 
         if base == "offshore2":
-            self.mav.altitude_estimator("BARO")
+            #self.mav.altitude_estimator("BARO")
             self.mav.set_position(-53.7, -35.2, 4,1.57)
-            self.mav.altitude_estimator("HEIGHT")
-            self.mav.set_position(-53.7, -35.2, 0.55,1.57)
+            #self.mav.altitude_estimator("HEIGHT")
+            #self.mav.set_position(-53.7, -35.2, 0.55,1.57)
 
 
 if __name__ == "__main__":
