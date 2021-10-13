@@ -304,11 +304,11 @@ class fase1:
         for i in range(40):
             self.cv_control_publisher.publish(Bool(False))
             self.rate.sleep()
-        self.mav.land()
-        self.time(1)
-        self.mav.disarm()
         self.bases_visitadas += 1
         if self.giveup == 0:
+            self.mav.land()
+            self.time(1)
+            self.mav.disarm()
             rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
             self.time(6)
             self.mav.arm()
