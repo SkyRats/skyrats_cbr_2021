@@ -685,12 +685,12 @@ class trajectory:
         rospy.loginfo("Indo para a primeira base do offshore")
         self.go_to_fix("offshore1")
         time.sleep(5)
-        self.detector.main_loop()
+        #self.detector.main_loop()
 
         rospy.loginfo("Indo para a segunda base do offshore")
         self.go_to_fix("offshore2")
         time.sleep(5)
-        self.detector.main_loop()
+        #self.detector.main_loop()
 
         rospy.loginfo("Missao concluida, retornando para a base costeira")
         self.mav.altitude_estimator("BARO")

@@ -34,3 +34,7 @@ windows:
           rosservice call /$UAV_NAME/mavros/cmd/arming 1;
           sleep 2;
           rosservice call /$UAV_NAME/mavros/set_mode 0 offboard'
+  - mission:
+      layout: tiled
+      panes:
+        - waitForControl; sleep 20; python3 ../../scripts/go_and_detect.py

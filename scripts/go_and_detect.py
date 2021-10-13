@@ -3,7 +3,6 @@ import numpy as np
 import rospy
 from sensor_msgs.msg import Image, Range
 from cv_bridge import CvBridge,CvBridgeError
-import time
 from MRS_MAV import MRS_MAV
 
 
@@ -20,19 +19,18 @@ class pipeline_scanner:
 
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.debug_image = self.cv_image
-        self.rows, self.cols, a = self.debug_image.shape
         #self.cv_image = self.cv_image[int(self.rows*0.3) : int(self.rows - (self.rows*0.3)) , int(self.cols*0.3) : int(self.cols - (self.cols*0.3))]
-        self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV) #[int(rows*0.4) : int(rows - (rows*0.4)) , int(cols*0.4) : int(cols - (cols*0.4))]
+        #self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV) #[int(rows*0.4) : int(rows - (rows*0.4)) , int(cols*0.4) : int(cols - (cols*0.4))]
         self.mav.rate.sleep()
 
     def lidar_callback(self,data):
         self.lidar_range = data.range
 
     def detect_red(self):
-        lowerbvermelho = np.array([0, 230, 230])
-        upperbvermelho = np.array([30, 255, 255])
+        lowerbvermelho = np.array([0, 50, 20])
+        upperbvermelho = np.array([5, 255, 255])
         self.mask_vermelho = cv2.inRange(self.hsv, lowerbvermelho, upperbvermelho)
+        cv2.waitKey(15)
         if sum(sum(self.mask_vermelho)) > 1000:
             contours, hierarchy = cv2.findContours(self.mask_vermelho, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
@@ -47,9 +45,10 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "vermelho"
+                    rospy.loginfo("Sensor " + str(aux) +": Vermelho!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
-                cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 100,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1)
+                cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
             cv2.drawContours(self.debug_image, contours, -1, (255,0,0), 2)
         return
 
@@ -72,9 +71,10 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "verde"
+                    rospy.loginfo("Sensor " + str(aux) +": Verde!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
-                cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 100,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1)
+                cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
             cv2.drawContours(self.debug_image, contours, -1, (255,0,0), 2)
         return
 
@@ -97,17 +97,18 @@ class pipeline_scanner:
 
     def run(self):
         rospy.loginfo("Indo para o tubo")
-        self.mav.altitude_estimator("BARO")
         self.mav.set_position(-49.6, -24.7, 3, relative_to_drone=False)
         rospy.loginfo("Cheguei, descendo")
         self.mav.altitude_estimator("HEIGHT")
         self.mav.set_position(-49.6, -24.7, 1, relative_to_drone=False)
         rospy.loginfo("Em posição, iniciando scan")
         while self.mav.controller_data.position.y > -44.5:
+            self.debug_image = self.cv_image
+            self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
             self.height_check()
             self.mav.set_position(-49.6, self.mav.controller_data.position.y - 0.15, 1, relative_to_drone=False)
-            self.detect_red()
             self.detect_green()
+            self.detect_red()
             cv2.imshow("camera_drone", self.debug_image)
             self.sensor_reset()
             cv2.waitKey(15)
