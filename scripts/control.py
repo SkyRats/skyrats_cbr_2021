@@ -86,7 +86,7 @@ class PrecisionLanding():
                     self.is_lost = 1
             
             if not self.is_lost and self.first_detection == 1 and self.giveup == 0:
-                if self.detection.area_ratio < 0.35:  # Drone ainda esta longe do H
+                if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
                     if(self.flag == 0):
                         rospy.loginfo("Controle PID")
                         self.flag = 1
@@ -106,8 +106,6 @@ class PrecisionLanding():
                         self.vel_publisher.publish(self.velocity)
                         self.rate.sleep()
 
-                    print()
-
                 else:
                     self.velocity.x = self.velocity.y = self.velocity.z = 0
                     for j in range(20):
@@ -124,8 +122,8 @@ class PrecisionLanding():
                     now = rospy.get_rostime()
                     while not rospy.get_rostime() - now > rospy.Duration(secs=1):
                         self.rate.sleep()
-                    self.MAV.altitude_estimator("HEIGHT")
-                    self.MAV.set_position(self.MAV.controller_data.position.x,self.MAV.controller_data.position.y,0.55)
+                    #self.MAV.altitude_estimator("HEIGHT")
+                    #self.MAV.set_position(self.MAV.controller_data.position.x,self.MAV.controller_data.position.y,0.8)
                     self.MAV.land()
                     while self.lidar_range > 0.25:
                         pass
