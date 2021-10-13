@@ -31,7 +31,6 @@ class pipeline_scanner:
         lowerbvermelho = np.array([0, 50, 20])
         upperbvermelho = np.array([5, 255, 255])
         self.mask_vermelho = cv2.inRange(self.hsv, lowerbvermelho, upperbvermelho)
-        cv2.imshow("mask", self.mask_vermelho)
         cv2.waitKey(15)
         if sum(sum(self.mask_vermelho)) > 1000:
             contours, hierarchy = cv2.findContours(self.mask_vermelho, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -47,6 +46,7 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "vermelho"
+                    rospy.logerr("Sensor " + str(aux) +": Vermelho!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
                 cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
@@ -72,6 +72,7 @@ class pipeline_scanner:
                     aux = len(self.sensors_locations)
                     self.sensors_locations[len(self.sensors_locations)] = (cx,cy)
                     self.sensors_colors[len(self.sensors_locations)] = "verde"
+                    rospy.logwarn("Sensor " + str(aux) +": Verde!!!")
                 else:
                     self.sensors_locations[aux] = (cx,cy)
                 cv2.putText(self.debug_image, "Sensor " + str(aux), (cnt[0][0][0] - 20,cnt[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
