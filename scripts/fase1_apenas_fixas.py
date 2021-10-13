@@ -9,11 +9,7 @@ from MRS_MAV import MRS_MAV
 from std_msgs.msg import Bool
 from pickle import FALSE
 import time
-from skyrats_cbr_2021.msg import H_info
-from geometry_msgs.msg import TwistStamped, PoseStamped
-from geometry_msgs.msg import Vector3
-from simple_pid import PID
-from mrs_msgs.msg import PositionCommand
+from sensor_msgs.msg import Range
 
 MIN_LAR = 1200
 
@@ -22,6 +18,7 @@ class fase1:
     def __init__(self,mav):
         self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback)
         self.bridge_object = CvBridge()
+        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
         self.bases_visitadas = 0        
@@ -38,7 +35,9 @@ class fase1:
         self.setpoint_x = self.image_pixel_height/2  # y size
         self.setpoint_y = self.image_pixel_width/2  # x
 
-    
+    def lidar_callback(self,data):
+        self.lidar_range = data.range
+
     def camera_callback(self, data):
         self.cv_image = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
 
@@ -69,9 +68,9 @@ class fase1:
                 
 
     #ALTURA DA TRAJETORIA
-    def trajectory(self):       
-        self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 28,1.57)
-        self.mav.set_position(-53.7, -35.2, 28,1.57)
+    def trajectory(self): 
+        self.mav.altitude_estimator("BARO")
+        self.mav.set_position(-49.6, -24.7, 3, relative_to_drone=False)
         rospy.loginfo("Indo para offshore2")
         self.go_to_fix("offshore2")
         self.landing()
@@ -89,20 +88,26 @@ class fase1:
         self.landing()
         self.mav.set_position(self.mav.controller_data.position.x, self.mav.controller_data.position.y, 9,1.57)
         self.mav.set_position(10,90,9,1.57)
+        self.mav.altitude_estimator("HEIGHT")
+        self.mav.set_position(10, 90, 0.55,1.57)
         self.mav.land()    
         self.time(4)
         self.mav.disarm()
+           
 
     def landing(self):    
         self.mav.land()    
-        self.time(8)
+        self.time(5)
         self.mav.disarm()
         self.bases_visitadas += 1
         rospy.loginfo("N bases visitadas: " + str(self.bases_visitadas))
-        self.time(4)
+        self.time(5)
         self.mav.arm()
-        self.time(4)
+        self.time(5)
         self.mav.takeoff()
+        self.time(6)
+        self.mav.altitude_estimator("BARO")
+
     
     def time(self, t):
         now = rospy.get_rostime()
@@ -112,15 +117,22 @@ class fase1:
 
     def go_to_fix(self, base):
         if base == "pier":
-            self.mav.set_position(45.15, 10, 4,1.57)
-            self.mav.set_position(45.15, 10, -7,1.57)
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(45.4, 10, 4,1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(45.4, 10, 0.55,1.57)
 
         if base == "offshore1":
-            self.mav.set_position(-19.10, -21.1, 4,1.57)
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-19.10, -21.1, 4, hdg= 1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-19.10, -21.1, 0.55,1.57)
 
         if base == "offshore2":
-            self.mav.set_position(-53.7, -35.2, 3,1.57)
-
+            self.mav.altitude_estimator("BARO")
+            self.mav.set_position(-53.7, -35.2, 4, hdg=1.57)
+            self.mav.altitude_estimator("HEIGHT")
+            self.mav.set_position(-53.7, -35.2, 0.55,1.57)
 
 if __name__ == "__main__":
     rospy.init_node("fase1")
