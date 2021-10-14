@@ -20,8 +20,8 @@ from sensor_msgs.msg import Image, Range
 
 TOL=0.2
 TOL_BASE = 5
-VEL_CERTO_X = 0.23
-VEL_CERTO_Y = 0.23
+VEL_CERTO_X = 0.25
+VEL_CERTO_Y = 0.25
 
 class fase4:
 
@@ -130,10 +130,12 @@ class fase4:
 
     def boat_centralize(self):
         if self.land == 0:
+            self.perto_qr = 1
+            self.detector()
             self.delay = time.time() - self.last_time
             self.is_lost = self.delay > 3
             if not self.is_lost:
-                if self.detection.area_ratio < 0.25:  # Drone ainda esta longe do H
+                if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
                     if(self.flag == 0):
                         rospy.loginfo("Controle PID")
                         self.flag = 1
@@ -141,7 +143,7 @@ class fase4:
                     erro_x = self.detection.center_y - self.setpoint_x 
                     erro_y = self.detection.center_x - self.setpoint_y 
 
-                    p = 0.01
+                    p = 0.015
                         
                     self.velocity.x= -erro_x * p
                     self.velocity.y = -erro_y * p
@@ -180,7 +182,7 @@ class fase4:
                 rospy.loginfo("Base fora do campo de visao")
             self.rate.sleep()
 
-    def qr_centralize(self):
+    '''def qr_centralize(self):
         if self.decodificou == 0:
             self.perto_qr = 1
             self.detector()
@@ -229,7 +231,7 @@ class fase4:
                             
             else:
                 rospy.loginfo("QR fora do campo de visao")
-            self.rate.sleep()
+            self.rate.sleep()'''
 
     def run(self):
    
@@ -293,8 +295,8 @@ class fase4:
     def boat_detect(self):        
         now = rospy.get_rostime()
         self.giveup = 0
-        self.land = 0
-        while self.land == 0 and not self.giveup :
+        self.decodificou = 0
+        while self.decodificou == 1 and not self.giveup :
             if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
                print("Desisto dessa base")
                self.giveup = 1
@@ -305,7 +307,7 @@ class fase4:
         for i in range(40):
             self.cv_control_publisher.publish(Bool(False))
             self.rate.sleep()
-        self.decodificou = 0
+        '''self.decodificou = 0
         now = rospy.get_rostime()
         self.giveup = 0
         while self.decodificou == 0 and not self.giveup :
@@ -315,7 +317,7 @@ class fase4:
             for i in range(40):
                 self.cv_control_publisher.publish(Bool(True))
                 self.rate.sleep()
-            self.qr_centralize()
+            self.qr_centralize()'''
      
         self.perto_qr = 0
         self.decodificou = 0
