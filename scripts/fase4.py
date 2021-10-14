@@ -288,7 +288,7 @@ class fase4:
         self.giveup = 0
         self.decodificou = 0
         while self.decodificou == 0 and not self.giveup :
-            if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
+            if (rospy.get_rostime() - now > rospy.Duration(secs=90)):
                print("Desisto dessa base")
                self.giveup = 1
             for i in range(40):
