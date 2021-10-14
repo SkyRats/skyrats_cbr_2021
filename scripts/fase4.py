@@ -20,8 +20,8 @@ from sensor_msgs.msg import Image, Range
 
 TOL=0.2
 TOL_BASE = 5
-VEL_CERTO_X = 0.25
-VEL_CERTO_Y = 0.25
+VEL_CERTO_X = 0.23
+VEL_CERTO_Y = 0.23
 
 class fase4:
 
@@ -141,7 +141,7 @@ class fase4:
                     erro_x = self.detection.center_y - self.setpoint_x 
                     erro_y = self.detection.center_x - self.setpoint_y 
 
-                    p = 0.013
+                    p = 0.01
                         
                     self.velocity.x= -erro_x * p
                     self.velocity.y = -erro_y * p
@@ -198,7 +198,7 @@ class fase4:
                         erro_x = self.qrcode_center_y - self.setpoint_x 
                         erro_y = self.qrcode_center_x- self.setpoint_y 
 
-                        p = 0.007
+                        p = 0.005
                             
                         self.velocity.x= -erro_x * p
                         self.velocity.y = -erro_y * p
