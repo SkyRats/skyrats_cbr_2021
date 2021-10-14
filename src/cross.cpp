@@ -90,6 +90,7 @@ void HDetector::image_cb(const sensor_msgs::ImageConstPtr &img)
       msg.area_ratio = this->getArea();
       
       
+      
       //cout << "Centro em x: " << msg.center_x << endl;
       //cout << "Centro em y: " << msg.center_y << endl;
       //cout << "Area ratio " << msg.area_ratio << endl;
@@ -152,8 +153,8 @@ bool HDetector::detect(Mat frame)
   // inRange(hsvFrame, Scalar(30, 150, 0), Scalar(70, 255, 255), hsvFrame);
   inRange(hsvFrame, Scalar(20, 25, 0), Scalar(35, 255, 255), maskFrame);
 
-  if (!maskFrame.empty())
-    imshow("mask", maskFrame);
+  //if (!maskFrame.empty())
+    //imshow("mask", maskFrame);
 
   vector<vp> contours;
   findContours(maskFrame, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
@@ -179,8 +180,8 @@ bool HDetector::detect(Mat frame)
             Point(max_x + max_w, max_y + max_h), Scalar(0, 0, 255), 2);
   circle(frame, Point((max_x + max_w / 2), (max_y + max_h / 2)),
          1, (0, 0, 255), 3);
-  imshow("frame", frame);
-  waitKey(3); // Wait for a keystroke in the window
+  //imshow("frame", frame);
+  //waitKey(3); // Wait for a keystroke in the window
 
   if (DEBUG)
   {
