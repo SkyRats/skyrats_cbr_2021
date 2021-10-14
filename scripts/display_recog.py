@@ -112,7 +112,7 @@ class display_cv:
             for c in cnts:
                 (x1, y1, w1, h1) = cv2.boundingRect(c)
                 i = 0
-                if (h1)/(w1) >= 0.85 and (h1)/(w1) <= 1.15 and cv2.contourArea(c) <= 5000:
+                if (h1)/(w1) >= 0.85 and (h1)/(w1) <= 1.15 and cv2.contourArea(c) <= 20000:
                     for c2 in cnts:
                         (x2, y2, w2, h2) = cv2.boundingRect(c2)
                         if( (x2 > x1) and (y2 > y1) and (x1 + w1 > x2 + w2) and (y1 + h1 > y2 + h2) ):
@@ -729,7 +729,7 @@ class trajectory:
 
         if base == "movel3":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(35, -55, -6, hdg=3.14) #30 -55
+            self.mav.set_position(35, -55, -6, hdg=1.57) #30 -55
 
     def mission_start(self):
         display_found = False
