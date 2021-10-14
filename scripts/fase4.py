@@ -237,13 +237,13 @@ class fase4:
         self.go_to_fix("movel1")
         self.boat_detect()
         self.vel0()
-        self.drone.set_position(-29, 30, 4, hdg=1.57)
+        self.drone.set_position(-25, 30, 4, hdg=1.57)
         rospy.loginfo("Indo para base movel 2!")
         self.vel0()
         self.go_to_fix("movel2")
         self.boat_detect()
         #self.drone.set_position(60, 0, 4, hdg=1.57)
-        self.drone.set_position(71, 0, 4, hdg=1.57)
+        self.drone.set_position(69, 0, 4, hdg=1.57)
 
         rospy.loginfo("Indo para base movel 3!")
         self.vel0()
@@ -252,7 +252,7 @@ class fase4:
         rospy.loginfo("Set position")
         self.vel0()
         #self.drone.set_position(30, -55, 7, hdg=1.57)
-        self.drone.set_position(52, -55, 4, hdg=1.57)
+        self.drone.set_position(33, -55, 4, hdg=1.57)
         rospy.loginfo("Indo para base offshore1")
         self.go_to_fix("offshore1")
         self.fix_detect()
@@ -339,22 +339,22 @@ class fase4:
             self.drone.altitude_estimator("BARO")
             #self.drone.set_position(30, -55, 4, hdg=1.57)
             #self.drone.set_position(30, -55, -6, hdg=1.57)
-            self.drone.set_position(52, -55, 4, hdg=1.57)
-            self.drone.set_position(52, -55, -6, hdg=1.57)
+            self.drone.set_position(33, -55, 4, hdg=1.57)
+            self.drone.set_position(33, -55, -6, hdg=1.57)
         
         if base == "movel2":
             self.drone.altitude_estimator("BARO")
             #self.drone.set_position(60, 0, 4, hdg=1.57)
             #self.drone.set_position(60, 0, -6, hdg=1.57)
-            self.drone.set_position(71, 0, 4, hdg=1.57)
-            self.drone.set_position(71, 0, -6, hdg=1.57)
+            self.drone.set_position(69, 0, 4, hdg=1.57)
+            self.drone.set_position(69, 0, -6, hdg=1.57)
         
         if base == "movel1":
             self.drone.altitude_estimator("BARO")
             #self.drone.set_position(-30, 30, 4, hdg=1.57)
             #self.drone.set_position(-30, 30, -6, hdg=1.57)
-            self.drone.set_position(-29, 30, 4, hdg=1.57)
-            self.drone.set_position(-29, 30, -6, hdg=1.57)
+            self.drone.set_position(-25, 30, 4, hdg=1.57)
+            self.drone.set_position(-25, 30, -6, hdg=1.57)
 
 
     def vel0(self):
