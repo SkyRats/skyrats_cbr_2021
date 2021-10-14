@@ -234,7 +234,7 @@ class fase4:
 
     def run(self):
    
-        rospy.loginfo("Indo para base movel 1!")
+        '''rospy.loginfo("Indo para base movel 1!")
         self.go_to_fix("movel1")
         self.boat_detect()
         self.vel0()
@@ -244,17 +244,48 @@ class fase4:
         self.go_to_fix("movel2")
         self.boat_detect()
         self.drone.set_position(60, 0, 4, hdg=1.57)
+        #self.drone.set_position(71, 0, 4, hdg=1.57)
+
         rospy.loginfo("Indo para base movel 3!")
         self.vel0()
         self.go_to_fix("movel3")
-        self.boat_detect()
-        self.drone.set_position(30, -55, 4, hdg=1.57)
+        self.boat_detect()'''
+        self.drone.set_position(30, -55, 7, hdg=1.57)
+        #self.drone.set_position(52, -55, 4, hdg=1.57)
+
+        self.go_to_fix("offshore1")
+        self.fix_detect()
+        self.go_to_fix("offshore2")
+        self.fix_detect()
+        self.drone.set_position(self.drone.controller_data.position.x, self.drone.controller_data.position.y, 9,1.57)
+        self.drone.set_position(10,90,9,1.57)
+        self.drone.altitude_estimator("HEIGHT")
+        self.drone.set_position(10,90,0.55,1.57)
+        self.drone.land()    
+        self.tempo(4)
+        self.drone.disarm()
+
+
 
 
     def tempo(self,t):
         now = rospy.get_rostime()
         while not rospy.get_rostime() - now > rospy.Duration(secs=t):
             self.rate.sleep()
+
+
+    def fix_detect(self):
+        self.decodificou = 0
+        self.giveup = 0
+        now = rospy.get_rostime()
+        while self.decodificou == 0 and not self.giveup :
+            if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
+               print("Desisto dessa base")
+               self.giveup = 1
+            self.decode_qr()
+        self.decodificou = 0
+        self.drone.altitude_estimator("BARO")
+
 
     def boat_detect(self):        
         now = rospy.get_rostime()
@@ -290,9 +321,9 @@ class fase4:
     def go_to_fix(self, base):
         if base == "offshore1":
             self.drone.altitude_estimator("BARO")
-            self.drone.set_position(-19.10, -21.1, 5, hdg= 1.57)
-            #self.drone.altitude_estimator("HEIGHT")
-            #self.drone.set_position(-19.10, -21.1, 0.55)
+            self.drone.set_position(-19.10, -21.1, 7, hdg= 1.57)
+            self.drone.altitude_estimator("HEIGHT")
+            self.drone.set_position(-19.10, -21.1, 0.55)
 
         if base == "offshore2":
             self.drone.altitude_estimator("BARO")
@@ -303,18 +334,24 @@ class fase4:
 
         if base == "movel3":
             self.drone.altitude_estimator("BARO")
-            self.drone.set_position(40, -55, 4, hdg=1.57)
-            self.drone.set_position(40, -55, -6, hdg=1.57)
+            self.drone.set_position(30, -55, 4, hdg=1.57)
+            self.drone.set_position(30, -55, -6, hdg=1.57)
+            #self.drone.set_position(52, -55, 4, hdg=1.57)
+            #self.drone.set_position(52, -55, -6, hdg=1.57)
         
         if base == "movel2":
             self.drone.altitude_estimator("BARO")
-            self.drone.set_position(65, 0, 4, hdg=1.57)
-            self.drone.set_position(65, 0, -6, hdg=1.57)
+            self.drone.set_position(60, 0, 4, hdg=1.57)
+            self.drone.set_position(60, 0, -6, hdg=1.57)
+            #self.drone.set_position(71, 0, 4, hdg=1.57)
+            #self.drone.set_position(71, 0, -6, hdg=1.57)
         
         if base == "movel1":
             self.drone.altitude_estimator("BARO")
             self.drone.set_position(-30, 30, 4, hdg=1.57)
             self.drone.set_position(-30, 30, -6, hdg=1.57)
+            #self.drone.set_position(-29, 30, 4, hdg=1.57)
+            #self.drone.set_position(-29, 30, -6, hdg=1.57)
 
 
     def vel0(self):
