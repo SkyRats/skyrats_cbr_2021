@@ -250,6 +250,7 @@ class fase4:
         self.go_to_fix("movel3")
         self.boat_detect()
         rospy.loginfo("Set position")
+        self.vel0()
         #self.drone.set_position(30, -55, 7, hdg=1.57)
         self.drone.set_position(52, -55, 4, hdg=1.57)
         rospy.loginfo("Indo para base offshore1")
