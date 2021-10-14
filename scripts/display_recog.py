@@ -410,7 +410,7 @@ class display_cv:
         print(primeiro_digito)
         # print(primeiro_digito, end="%\n")
 
-        if primeiro_digito > 55 or primeiro_digito < 45:
+        if primeiro_digito >= 55 or primeiro_digito <= 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
             # print('\a')
         else:
@@ -421,7 +421,7 @@ class display_cv:
 
         # print(segundo_digito, end="%\n")
         print(segundo_digito)
-        if segundo_digito > 5 or segundo_digito <= -5:
+        if segundo_digito >= 5 or segundo_digito <= -5:
             print('\033[1;37;41m AJUSTE DE ZERO FORA DE CONFORMIDADE \033[0;0m')
             # print('\a')
         else:
@@ -665,34 +665,31 @@ class trajectory:
             self.mav.altitude_estimator("HEIGHT")
             self.mav.set_position(-53.7, -35.2, 0.55)
 
-        if base == "movel1":
+        if base == "movel3":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(-53.7, -35.2, 28)
             self.mav.set_position(30, -55, 4, hdg=1.57)
-            self.mav.set_position(30, -55, -6)
+            self.mav.set_position(30, -55, -6, hdg=1.57)
         
         if base == "movel2":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(30, -55, 4)
             self.mav.set_position(60, 0, 4, hdg=1.57)
-            self.mav.set_position(60, 0, -6)
+            self.mav.set_position(60, 0, -6, hdg=1.57)
         
-        if base == "movel3":
+        if base == "movel1":
             self.mav.altitude_estimator("BARO")
-            self.mav.set_position(60, 0, 4)
             self.mav.set_position(-30, 30, 4, hdg=1.57)
-            self.mav.set_position(-30, 30, -6)
+            self.mav.set_position(-30, 30, -6, hdg=1.57)
 
     def mission_start(self):
-        rospy.loginfo("Indo para a primeira base do offshore")
-        self.go_to_fix("offshore1")
-        time.sleep(5)
-        self.detector.main_loop()
-
-        rospy.loginfo("Indo para a segunda base do offshore")
-        self.go_to_fix("offshore2")
-        time.sleep(5)
-        self.detector.main_loop()
+        #rospy.loginfo("Indo para a primeira base do offshore")
+        #self.go_to_fix("offshore1")
+        #time.sleep(5)
+        #self.detector.main_loop()
+        #
+        #rospy.loginfo("Indo para a segunda base do offshore")
+        #self.go_to_fix("offshore2")
+        #time.sleep(5)
+        #self.detector.main_loop()
 
         rospy.loginfo("Indo para a primeira base movel")
         self.go_to_fix("movel1")
