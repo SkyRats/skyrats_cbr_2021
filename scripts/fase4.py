@@ -69,7 +69,7 @@ class fase4:
         self.detection = vector_data
         self.last_time = time.time()
 
-    def detector(self):
+    '''def detector(self):
         if self.decodificou == 0:
             self.rows, self.cols, a = self.cv_image.shape
             self.hsv = cv2.cvtColor(self.cv_image,cv2.COLOR_BGR2HSV)
@@ -100,7 +100,7 @@ class fase4:
                         pass                       
             #cv2.drawContours(mask_branco, contours, -1, (0, 255, 0), 3)
             cv2.imshow('QR',mask_branco)
-            cv2.waitKey(13)
+            cv2.waitKey(13)'''
             
 
 
@@ -129,55 +129,46 @@ class fase4:
 
 
     def boat_centralize(self):
-        if self.land == 0:
+        if self.decodificou == 0:
             self.perto_qr = 1
-            self.detector()
             self.delay = time.time() - self.last_time
             self.is_lost = self.delay > 3
             if not self.is_lost:
-                if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H
-                    if(self.flag == 0):
-                        rospy.loginfo("Controle PID")
-                        self.flag = 1
-                    
-                    erro_x = self.detection.center_y - self.setpoint_x 
-                    erro_y = self.detection.center_x - self.setpoint_y 
+                
+                if(self.flag == 0):
+                    rospy.loginfo("Controle PID")
+                    self.flag = 1
+                
+                erro_x = self.detection.center_y - self.setpoint_x 
+                erro_y = self.detection.center_x - self.setpoint_y 
 
-                    p = 0.015
-                        
-                    self.velocity.x= -erro_x * p
-                    self.velocity.y = -erro_y * p
-                    if self.velocity.x > 1:
-                        self.velocity.x =1
-                    if self.velocity.x < -1:
-                        self.velocity.x =-1
-                    if self.velocity.y > 1:
-                        self.velocity.y =1
-                    if self.velocity.y < -1:
-                        self.velocity.y =-1
+                p = 0.012
+                    
+                self.velocity.x= -erro_x * p
+                self.velocity.y = -erro_y * p
+                if self.velocity.x > 1:
+                    self.velocity.x =1
+                if self.velocity.x < -1:
+                    self.velocity.x =-1
+                if self.velocity.y > 1:
+                    self.velocity.y =1
+                if self.velocity.y < -1:
+                    self.velocity.y =-1
+                if self.detection.area_ratio < 0.45:  # Drone ainda esta longe do H 
 
                     if(abs(self.velocity.x) < VEL_CERTO_X and abs(self.velocity.y) < VEL_CERTO_Y):
                         self.velocity.z = -1
                     else:
                         self.velocity.z = 0
-                    
-
-                    for b in range(10):
-                        self.vel_publisher.publish(self.velocity)
-                        self.rate.sleep()
-
+                
                 else:
-                    self.vel0()
+                    self.velocity.z = 0
 
-                    if (self.flag == 1):
-                        rospy.loginfo("Se aproximou do Barco")
-                        self.flag = 0
-                        
+                for b in range(10):
+                    self.vel_publisher.publish(self.velocity)
+                    self.rate.sleep()
 
-                    self.land = 1
-                    for i in range(40):
-                        self.cv_control_publisher.publish(Bool(False))
-                        self.rate.sleep()
+               
             else:
                 rospy.loginfo("Base fora do campo de visao")
             self.rate.sleep()
