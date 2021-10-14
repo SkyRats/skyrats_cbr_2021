@@ -43,7 +43,6 @@ class display_cv:
 
     def main_loop(self):
         while not rospy.is_shutdown():
-            print("a")
             # sucess, frame = self.cap.read()
             # frame = np.array(frame)
             #print(frame.shape) #cursed BGR
@@ -173,7 +172,7 @@ class display_cv:
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
         # thresh = cv2.dilate(thresh,kernel,iterations = 3)
         thresh = cv2.dilate(thresh,kernel,iterations = 1)
-        cv2.imshow("digit_recog test", thresh)
+        #cv2.imshow("digit_recog test", thresh)
         cv2.waitKey(15)
 
         cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -206,7 +205,7 @@ class display_cv:
                     # print(x, y, h, w)
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
                     digitCnts.append(c)
-        cv2.imshow("teste_02", image)
+        #cv2.imshow("teste_02", image)
         # cv2.waitKey(0)
 
         # digitCnts.sort(reverse=True, key=self.sorter)
@@ -432,7 +431,7 @@ class display_cv:
             print('\033[1;37;42m AJUSTE DE ZERO DENTRO DOS CONFORMES \033[0;0m')
 
         
-        cv2.imshow("teste retangulos", image)
+        #cv2.imshow("teste retangulos", image)
         # if segundo_digito == 101:
         #     cv2.waitKey(0)
         # else:
@@ -569,8 +568,8 @@ class display_cv:
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
         # thresh = cv2.dilate(thresh,kernel,iterations = 3)
         thresh = cv2.dilate(thresh,kernel,iterations = 1)
-        cv2.imshow("thresh_orientation", thresh)
-        cv2.waitKey(15)
+        #cv2.imshow("thresh_orientation", thresh)
+        #cv2.waitKey(15)
         # cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         # cnts = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
