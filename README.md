@@ -1,7 +1,7 @@
 # skyrats_cbr_2021
-Repositório destinado aos desenvolvimentos para a Competição Brasileira de Robótica de 2021 feitos pela Equipe Skyrats de Drones Autônomos da Poli-USP
+Repositório destinado aos desenvolvimentos para a Competição Brasileira de Robótica de 2021 feitos pela Equipe Skyrats de Drones Autônomos da Poli-USP, que levaram a equipe ao **primeiro lugar** na categoria Desafio Petrobrás.
 
-## Instalando Firmware e Simulação
+## Instalações
 
 A partir daqui vc deve ter acabado de instalar Ubuntu 20.04 no seu computador (novinho e folha ;) ). 
 Siga os seguintes passos pra fazer o tudo funcionar (deve ter outros jeitos de fazer isso mas desse jeito foi testado e funcionou):
