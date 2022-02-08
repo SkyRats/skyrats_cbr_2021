@@ -37,4 +37,4 @@ windows:
   - mission:
       layout: tiled
       panes:
-        - waitForControl; sleep 20; python3 ../../scripts/go_and_detect.py
+        - waitForControl; sleep 20; python3 ../../scripts/fase2.py
