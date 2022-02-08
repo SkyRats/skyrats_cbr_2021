@@ -44,7 +44,7 @@ class fase4:
         if self.perto_qr == 1:
             self.decode_qr()
 
-    def decode_qr(self):
+    def decode_qr(self):    #Decodifica o qrcode
         self.gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
         #img_bw = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY)[1] #thresh = 40
 
@@ -58,12 +58,12 @@ class fase4:
             self.barcodeData = barcode.data.decode("utf-8")
             self.decodificou = 1            
 
-            if(self.barcodeData != self.barcode_antigo):
+            if(self.barcodeData != self.barcode_antigo): #Evita que o dado do qrcode seja printado diversas vezes 
                 self.barcode_antigo = self.barcodeData
                 self.repetido = 0
 
             if(self.repetido == 0):
-                rospy.loginfo("QRCODE: " + str(self.barcodeData))
+                rospy.loginfo("QRCODE: " + str(self.barcodeData))   
                 self.repetido = 1
 
 
@@ -92,7 +92,7 @@ class fase4:
             self.rate.sleep()
 
 
-    def fix_detect(self):
+    def fix_detect(self): #Tenta decodificar o qrcode por 60 seg
         self.decodificou = 0
         self.giveup = 0
         now = rospy.get_rostime()
@@ -124,22 +124,19 @@ class fase4:
             self.drone.altitude_estimator("BARO")
             self.drone.set_position(30, -55, 4, hdg=1.57)
             self.drone.set_position(30, -55, -6, hdg=1.57)
-            #self.drone.set_position(52, -55, 4, hdg=1.57)
-            #self.drone.set_position(52, -55, -6, hdg=1.57)
+
         
         if base == "movel2":
             self.drone.altitude_estimator("BARO")
             self.drone.set_position(60, 0, 4, hdg=1.57)
             self.drone.set_position(60, 0, -6, hdg=1.57)
-            #self.drone.set_position(71, 0, 4, hdg=1.57)
-            #self.drone.set_position(71, 0, -6, hdg=1.57)
+
         
         if base == "movel1":
             self.drone.altitude_estimator("BARO")
             self.drone.set_position(-30, 30, 4, hdg=1.57)
             self.drone.set_position(-30, 30, -6, hdg=1.57)
-            #self.drone.set_position(-29, 30, 4, hdg=1.57)
-            #self.drone.set_position(-29, 30, -6, hdg=1.57)
+
 
 
     def vel0(self):

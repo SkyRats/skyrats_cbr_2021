@@ -11,14 +11,15 @@ from pickle import FALSE
 import time
 from sensor_msgs.msg import Range
 
-MIN_LAR = 1200
+MIN_LAR = 1200 
 
+#Codigo seguro para garantir pontos na competicao
 
 class fase1:
     def __init__(self,mav):
-        self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback)
+        self.image_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw", Image, self.camera_callback) #Recebe o topico de imagem da camera
         self.bridge_object = CvBridge()
-        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback)
+        self.lidar_sub = rospy.Subscriber("/uav1/garmin/range", Range, self.lidar_callback) #Recebe dados do lidar para baixo do drone
         rospy.wait_for_message("/uav1/bluefox_optflow/image_raw", Image)
         self.mav = mav
         self.bases_visitadas = 0        
@@ -43,23 +44,23 @@ class fase1:
 
 
     def tubo(self):
-        if self.encontrou_lar == False:
+        if self.encontrou_lar == False: #Verifica se o tubo ja foi encontrado
             self.rows, self.cols, b = self.cv_image.shape
             self.cv_image_cortada = self.cv_image[0: int(self.rows - (self.rows*0.2)) , int(self.cols*0.2) : self.cols]
             self.rows, self.cols, b = self.cv_image_cortada.shape
             self.hsv = cv2.cvtColor(self.cv_image_cortada,cv2.COLOR_BGR2HSV)
-            lowerblaranja = np.array([0, 110, 230])
+            lowerblaranja = np.array([0, 110, 230])     #Cria a mascara de laranja para isolar apenas o tubo na imagem
             upperblaranja = np.array([26, 160, 255])
             mask_laranja = cv2.inRange(self.hsv, lowerblaranja, upperblaranja)    
 
             soma_lar = 0
             self.encontrou_lar = False
-            for i in range (self.rows):
+            for i in range (self.rows): #Percorre o frame contando o numero de pixels brancos (isolados pela mascara)
                 for j in range (self.cols):
                     if  mask_laranja[i, j] >= 200:
                         soma_lar += 1
 
-            if (soma_lar > MIN_LAR):
+            if (soma_lar > MIN_LAR):    #Verifica se existe um numero suficiente de pixels laranjas para que nao seja considerado um engano
                 self.soma += 1
 
             if(self.soma > 2):
@@ -67,8 +68,7 @@ class fase1:
                 rospy.loginfo("TUBO DETECTADO")
                 
 
-    #ALTURA DA TRAJETORIA
-    def trajectory(self): 
+    def trajectory(self):   #Trajetoria fixa e definida para garanti o pouso nas bases paradas
         self.mav.altitude_estimator("BARO")
         self.mav.set_position(-49.6, -24.7, 3, relative_to_drone=False)
         rospy.loginfo("Indo para offshore2")
@@ -77,7 +77,7 @@ class fase1:
         rospy.loginfo("Procurando Tubo...")
         self.mav.set_position(-50, -36, 4,1.57)
         for i in range(40):
-            self.tubo()
+            self.tubo()     #Verifica a existencia do tubo na base offshore
             self.rate.sleep()
         self.mav.set_position(-50, -21, 4,1.57)
         rospy.loginfo("Indo para offshore1")
