@@ -12,7 +12,6 @@ import time
 from skyrats_cbr_2021.msg import H_info
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from geometry_msgs.msg import Vector3
-from simple_pid import PID
 from mrs_msgs.msg import PositionCommand
 
 MIN_LAR = 1200

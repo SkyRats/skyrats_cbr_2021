@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="skyrats_cbr_2021" name="qr_detection" type="detection_with_ros.py" output="screen"/>
-</launch>

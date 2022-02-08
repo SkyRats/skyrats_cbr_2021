@@ -11,6 +11,7 @@ windows:
       layout: tiled
       panes:
         - waitForRos; roslaunch offshore_uav_pack offshore_rig.launch
+        - waitForOdometry; gz camera -c gzclient_camera -f uav1; history -s gz camera -c gzclient_camera -f uav1
   - status:
       layout: tiled
       panes:
