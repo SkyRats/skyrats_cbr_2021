@@ -1,7 +1,7 @@
 <launch>
   <node
     pkg="skyrats_cbr_2021"
-    type="display_recog.py"
+    type="fase3.py"
     name="display_recognition"
     output="screen"
   /> 

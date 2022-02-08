@@ -12,7 +12,7 @@ from rospy.topics import Publisher
 from geometry_msgs.msg import Point
 from std_msgs.msg import Bool, String
 from geometry_msgs.msg import Vector3
-import detection_with_ros as Detection
+import qr_detection as Detection
 from skyrats_cbr_2021.msg import H_info
 from cv_bridge import CvBridge,CvBridgeError
 from sensor_msgs.msg import Image, Range

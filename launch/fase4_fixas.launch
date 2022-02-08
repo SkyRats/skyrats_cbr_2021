@@ -1,7 +1,7 @@
 <launch>
   <node
   pkg="skyrats_cbr_2021"
-  type="fase4_fixa.py"
+  type="fase4_bases_fixas.py"
   name="fase4_fixa"
   output="screen"
   />

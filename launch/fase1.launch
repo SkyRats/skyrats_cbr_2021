@@ -7,7 +7,7 @@
   />
   <node
     pkg="skyrats_cbr_2021"
-    type="fase1_proporcional.py"
+    type="fase1.py"
     name="fase1"
     output="screen"
   /> 
