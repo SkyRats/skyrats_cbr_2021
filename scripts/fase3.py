@@ -9,10 +9,10 @@ from sensor_msgs.msg import Image, Range
 from MRS_MAV import MRS_MAV
 from geometry_msgs.msg import Vector3
 import time
-# import imutils
+
 
 DEBUG = False
-DIGITS_LOOKUP = {
+DIGITS_LOOKUP = { #forma de diferenciar diferentes digitos atraves da posicao dos LEDS ligados no display
             (1, 1, 1, 0, 1, 1, 1): 0,
             (1, 0, 1, 1, 1, 0, 1): 2,
             (1, 0, 1, 1, 1, 1, 1): 3,
@@ -29,12 +29,12 @@ class display_cv:
     def __init__(self):
         self.rate = rospy.Rate(60)
         self.bridge_object = CvBridge()
-        self.cam_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw/", Image, self.cam_callback)
-        rospy.wait_for_message("/uav1/bluefox_optflow/image_raw/", Image)
+        self.cam_sub = rospy.Subscriber("/uav1/bluefox_optflow/image_raw/", Image, self.cam_callback) #subscriber da camera do drone
+        rospy.wait_for_message("/uav1/bluefox_optflow/image_raw/", Image) #garante que o codigo so comeca quando imagens forem recebidas
 
     def cam_callback(self, data):
         try:
-            self.cam_frame = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8")
+            self.cam_frame = self.bridge_object.imgmsg_to_cv2(data,desired_encoding="bgr8") #self.cam_frame recebe constantemente a imagem da camera
         except CvBridgeError as e:
             print(e)
 
@@ -69,7 +69,7 @@ class display_cv:
 
             if DEBUG:
                 cv2.imshow("threshold", thresh)
-                cv2.waitKey(30) #pro pc do igor n morrer
+                cv2.waitKey(30)
         
             cnts, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
                         
@@ -97,6 +97,7 @@ class display_cv:
                     break
             return 0
     def digit_recog(self, image):
+
         #Tratamento de imagem
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (1, 1), 0)
@@ -106,31 +107,33 @@ class display_cv:
         thresh = cv2.dilate(thresh,kernel,iterations = 1)
         cv2.waitKey(15)
 
-        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)# pega os contornos da imagem tratada
         digitCnts = []
 
         for c in cnts:
-            (x, y, w, h) = cv2.boundingRect(c)
+            (x, y, w, h) = cv2.boundingRect(c) #pega o retangulo que engloba o contorno
+            #Condicional para ver se trata-se de numeros no display mesmo (usando propocoes)
             if ((h/w <= 8 and (h)/(w) >= 3 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.019) or 
             (float(h)/float(w) >= 1.7 and float(h)/float(w) <= 2.8 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.045) or 
-            (float(h)/float(w) <= 0.90 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):# and ((w)/(h) >=1.5 or (w)/(h)<=0.7):
+            (float(h)/float(w) <= 0.90 and float(h)/float(w) >= 0.1 and (float(h*w))/(float(np.shape(image)[0]*np.shape(image)[1])) >= 0.01)):
                 if (x + w) < (5*(np.shape(image)[1]))/6:
-                    cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0))
-                    digitCnts.append(c)
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0,255,0)) #desenha na imagem de debug
+                    digitCnts.append(c) #salva o digito no array digitCnts
 
         linha1 = []
         linha2 = []
 
-        for c in digitCnts:
+        for c in digitCnts: #para cada digito detectado
             (x, y, w, h) = cv2.boundingRect(c)
+            #diferencia digitos da linha de cima da linha debaixo
             if y + 15 < (np.shape(image)[0])/2:
                 linha1.append(c)
             else:
                 linha2.append(c)
 
+        #garantir a ordem desejada:
         linha1.sort(reverse=True, key=self.sorter)
         linha2.sort(reverse=False, key=self.sorter)
-        
         if len(linha1) > 0 and len(linha2) > 0:
             contours.sort_contours(linha1)
             contours.sort_contours(linha2)
@@ -138,11 +141,10 @@ class display_cv:
             print("No contours")
             return False
 
-
+        #algoritmo para diferenciar digitos e salva-los
         Digits = []
         first_number_digit_count = 0
         second_number_digit_count = 0
-
         for c in linha1:
             if first_number_digit_count < 2:
                 (x, y, w, h) = cv2.boundingRect(c)
@@ -269,6 +271,7 @@ class display_cv:
             return False
         print(primeiro_digito)
 
+        #interpretacao dos resultados como requisitado pela competicao
         if primeiro_digito >= 55 or primeiro_digito <= 45:
             print('\033[1;37;41m PERCENTUAL DE GAS FORA DE CONFORMIDADE \033[0;0m')
         else:
@@ -404,7 +407,7 @@ class display_cv:
         (x, y, w, h) = cv2.boundingRect(c)
         return x
 
-    def checkOrientation(self, image):
+    def checkOrientation(self, image): #preve a orientacao do display em relacao a camera do drone
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (1, 1), 0)
         thresh = cv2.threshold(blurred, 0, 255,	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -443,7 +446,7 @@ class display_cv:
         else:
             return False
 
-class center_display:
+class center_display: #classe para centralizar o display na camera do drone (utilizado nas bases moveis)
     def __init__(self, mav, cv):
         self.cv = cv
         self.mav = mav
@@ -451,9 +454,9 @@ class center_display:
         self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
         self.velocity = Vector3()
         self.area_ratio = 0
-        self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10)
+        self.vel_publisher = rospy.Publisher("/vel", Vector3, queue_size=10) #publisher para controlar a velocidade do drone
    
-    def is_there_a_display(self):
+    def is_there_a_display(self): #verifica se existe um display na tela por sua cor particular
          self.display_center()
          if sum(sum(self.mask_preto)) > 0:
              print("MOSTRADOR DETECTADO")
@@ -461,7 +464,7 @@ class center_display:
          else:
              return False
     
-    def display_center(self):
+    def display_center(self): #retorna o centro do display caso ele exista na imagem da camera
         self.frame = self.cv.cam_frame
         self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
         lowerbpreto = np.array([0, 0, 0])
@@ -484,7 +487,7 @@ class center_display:
             return cx, cy
         return -1,-1
 
-    def centralize(self):
+    def centralize(self): #controla o drone para que ele se estabilize em cima do display, com o mesmo centralizado no imagem
         self.display_center()
         while not rospy.is_shutdown():
             x,y = self.display_center()
@@ -523,7 +526,7 @@ class center_display:
                 self.vel_publisher.publish(self.velocity)
                 self.cv.rate.sleep()
 
-class trajectory:
+class trajectory: #classe para controle do drone entre as bases e displays
     def __init__(self, mavbase, detector, display): #, display
         self.mav = mavbase
         self.detector = detector
@@ -538,7 +541,7 @@ class trajectory:
         while not rospy.get_rostime() - now > rospy.Duration(secs=t):
             self.detector.rate.sleep()
 
-    def go_to_fix(self, base):
+    def go_to_fix(self, base): #vai para as bases da competicao
         if base == "offshore1":
             self.mav.set_position(-19.10, -21.1, 4, hdg= 1.57)
             self.mav.altitude_estimator("HEIGHT")
@@ -564,7 +567,8 @@ class trajectory:
             self.mav.altitude_estimator("BARO")
             self.mav.set_position(35, -55, -6, hdg=1.57) #30 -55
 
-    def mission_start(self):
+    def mission_start(self): #arquitetura da missao
+        #A primeira parte consiste em achar o display que esta em uma das bases moveis
         display_found = False
 
         if not display_found:
@@ -591,16 +595,17 @@ class trajectory:
                 display_found = True
                 self.time(5)
 
+        #tendo achado ou nao o display das bases moveis, o drone passa para fazer a leitura das bases fixas
         rospy.loginfo("Indo para a primeira base do offshore")
-        self.go_to_fix("offshore1")
-        self.displayPresence.is_there_a_display()
-        self.time(5)
+        self.go_to_fix("offshore1") #vai para a base offshore1
+        self.displayPresence.is_there_a_display() #detecta a presenca do display
+        self.time(5) #tempo requisitado pela competicao
         now = rospy.get_rostime()
-        while not self.detector.main_loop():
+        while not self.detector.main_loop(): #tenta detectar os numeros no display
             if (rospy.get_rostime() - now > rospy.Duration(secs=60)):
-               print("Desisto")
+               print("Desisto") #desiste depois de 60s
         rospy.loginfo("aguardando os 5 segundos")
-        self.time(5)
+        self.time(5) #tempo requisitado pela competicao
         
         rospy.loginfo("Indo para a segunda base do offshore")
         self.go_to_fix("offshore2")
@@ -613,7 +618,8 @@ class trajectory:
         rospy.loginfo("aguardando os 5 segundos")
         self.time(5)
 
-        rospy.loginfo("Missao concluida, retornando para a base costeira")
+        #Finalizacao da missao
+        rospy.loginfo("Missao concluida, retornando para a base costeira") 
         self.mav.altitude_estimator("BARO")
         self.mav.set_position(10, 90, 4, hdg= 1.57)
         self.mav.altitude_estimator("HEIGHT")
@@ -632,3 +638,6 @@ if __name__ == "__main__":
     display = center_display(mav, detector)
     controller = trajectory(mav, detector, display)
     controller.mission_start()
+
+#Esse codigo foi usado na competicao com a estrategia de detectar o display da base movel e fazer a leitura dos demais displays
+#Dito isso, ele nao foi capaz de ler o display da base movel
